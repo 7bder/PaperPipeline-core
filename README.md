@@ -141,15 +141,15 @@ git clone https://github.com/7bder/orchd-core.git $env:TEMP\orchd-core
 python $env:TEMP\orchd-core\install.py <论文项目> --agent --cleanup
 ```
 
-**② 安装 paper-pipeline**（本技能；仓库 <https://github.com/7bder/paper-pipeline>。skill 模式装进宿主
+**② 安装 paper-pipeline**（本技能；发布仓 <https://github.com/7bder/PaperPipeline-core>。skill 模式装进宿主
 agent 技能目录，一次即可）：
 
 ```powershell
-git clone https://github.com/7bder/paper-pipeline.git $env:TEMP\paper-pipeline
-python $env:TEMP\paper-pipeline\install.py <技能目录> --mode skill --cleanup
+git clone https://github.com/7bder/PaperPipeline-core.git $env:TEMP\PaperPipeline-core
+python $env:TEMP\PaperPipeline-core\install.py <技能目录> --mode skill --cleanup
 ```
 
-本机已有源码时免 clone：`python <paper-pipeline 仓库路径>\install.py <目标> --mode <skill|project> ...`。
+本机已有源码时免 clone：`python <PaperPipeline-core 仓库路径>\install.py <目标> --mode <skill|project> ...`。
 
 **③ 新论文项目装配（最简流程，顺序不可颠倒）**：
 
@@ -184,7 +184,7 @@ python .orchd\__main__.py intake       # 人工闸门：只能你执行
 
 1. 跑生成器：`python scripts/30-gen-proposals.py --profile profiles/<x>.yaml --out <输出目录>`
    （输出目录直接放目标论文项目内，或生成后拷入）
-2. **装配判据基座（不可跳过）**：`python paper-pipeline/install.py <论文项目>/ --mode project --profile profiles/<profile 文件名>`
+2. **装配判据基座（不可跳过）**：`python PaperPipeline-core/install.py <论文项目>/ --mode project --profile profiles/<profile 文件名>`
    ——把 `70-verify.py`、`71-verify-manifest.template.json`（**模板**，项目侧由断言片段 `verify_manifest.fragment.json`
    改名为 `71-verify-manifest.json`）与 LaTeX 三件套 vendor 进项目 `70-tools/`。跳过此步的话，
    任务 done 时 `verify_command` 引用的脚本在项目里不存在，E014/E037 必撞墙。
@@ -220,9 +220,9 @@ python .orchd\__main__.py intake       # 人工闸门：只能你执行
 
 ```bash
 # skill 模式：整套发布面装进宿主的 agent 技能目录
-git clone <本仓地址> && python paper-pipeline/install.py <技能目录> --mode skill --cleanup
+git clone https://github.com/7bder/PaperPipeline-core.git && python PaperPipeline-core/install.py <技能目录> --mode skill --cleanup
 # project 模式：判据基座 vendor 进论文项目（70-tools/ 规范路径）
-python paper-pipeline/install.py <论文项目>/ --mode project --profile profiles/<profile 文件名>
+python PaperPipeline-core/install.py <论文项目>/ --mode project --profile profiles/<profile 文件名>
 ```
 
 > project 模式即上方[与 orchd 的接法](#与-orchd-的接法唯一正确姿势)第 2 步的装配动作，**不可跳过**。
@@ -245,7 +245,7 @@ python paper-pipeline/install.py <论文项目>/ --mode project --profile profil
 # dry-run：只组装 + 提交到临时 git 仓，不联网（先看产物与消息）
 python scripts/79-release-publish.py
 # 正式发版：组装 + 提交 + push 到发布仓（git 凭据走本机）
-python scripts/79-release-publish.py --remote https://github.com/<你>/paper-pipeline-dist.git
+python scripts/79-release-publish.py --remote https://github.com/7bder/PaperPipeline-core.git
 # 附带打 tag 并推送 tag（tag 属 git 写操作，须显式给出）
 python scripts/79-release-publish.py --remote <发布仓URL> --tag v0.4.0
 ```

@@ -127,7 +127,7 @@ CACHE_META = {"tool": "35-refs-gate", "schema": 1}
 THROTTLE_HOSTS = ("api.semanticscholar.org", "api.crossref.org", "api.openalex.org", "export.arxiv.org")
 # arXiv 只出 Atom XML（实测 content-type），其余只出 JSON；Accept 一并声明，避免服务端按内容协商拒收。
 HEADERS = {
-    "User-Agent": "paper-pipeline-refs-gate/1.0 (+https://github.com/7bder/paper-pipeline)",
+    "User-Agent": "paper-pipeline-refs-gate/1.0 (+https://github.com/7bder/PaperPipeline-core)",
     "Accept": "application/json, application/atom+xml, text/xml, */*",
 }
 # G2（2026-10-07 审查）：礼貌池——缺省（未设环境变量）与现状**逐字一致**；配置后才带身份/提速。

@@ -12,7 +12,7 @@
 
 ## 0. 公共约定（四索引通吃）
 
-- **User-Agent**：`paper-pipeline-refs-gate/1.0 (+https://github.com/7bder/paper-pipeline)`（见 `35-refs-gate.py` `HEADERS`）。
+- **User-Agent**：`paper-pipeline-refs-gate/1.0 (+https://github.com/7bder/PaperPipeline-core)`（见 `35-refs-gate.py` `HEADERS`）。
 - **Accept**：`application/json, application/atom+xml, text/xml, */*`——arXiv 只出 Atom XML，其余出 JSON，一并声明避免内容协商拒收。
 - **限速（节流真源）**：默认 `MIN_INTERVAL_S = 1.0`；**按 host 分档** `HOST_INTERVAL_S`——`export.arxiv.org` 取 **3.5s**（官方要求程序化请求间隔 ≥3s，且其超速惩罚是 **406** 而非 429、窗口会累积）。
 - **重试**：`RETRIES = 2`、`BACKOFF_S = 2.0`；重试状态码 `RETRY_STATUS = (408, 425, 429, 406, 500, 502, 503, 504)`。
