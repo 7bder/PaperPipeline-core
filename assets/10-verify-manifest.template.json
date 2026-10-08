@@ -1,0 +1,97 @@
+{
+  "_note": "verify manifest 模板：键 = 任务 id，值 = 该任务的验收断言。复制到项目 70-tools/71-verify-manifest.json（或 paper1 兼容的 scripts/verify_manifest.json）。断言类型见 70-verify.py --schema。示例条目请整体替换。 F12（2026-10-06）：token_source 为合法标注键（78 号出处守卫消费，70-verify 不拒绝不消费）。",
+  "_note_count_distinct_F18": "唯一计数（F18）：scope=line 数唯一匹配行、scope=all 数唯一匹配串（缺省 line）——抗「同图号复制 / 整列同值填充」；min_matches 计总次数，填充式凑数仍过检，二者互补按需选用。",
+  "_note_declare_and_count_B07a": "declare_and_count（B07）：声明与计数绑死——用 declare_regex 的捕获组从文本解析声明数 N（如「共 8 条」→8，「共 0 条」→0），要求 pattern 的实际匹配数**恰好等于 N**；缺声明行或 N≠实际数即 FAIL(1)。堵「共 999 条」幽灵声明。declare_regex 必须含至少一个捕获组，否则 rc=2。",
+  "_note_require_keys_F12": "require_keys 只查第 1 个元素（候选层断言形态）；逐条齐全用 require_keys_all；空列表 + require_keys* 且无有效 min_items 判 FAIL（N-3）。",
+  "_note_require_values_B06a": "require_values（B06a）：json_files 的值判定原语——逐元素检查这些键**等值**（布尔/字符串/数字/null 标量；值写容器即 rc=2 形态错）。例：22-refs.json 逐条 two_source_verified 必须真为 true（只判键存在会把 false 放行）。空列表 + require_values 且无有效 min_items 判 FAIL（N-3 同口径）。",
+  "_note_token_source_F12": "token_source（F12）：标注断言词项的出处，78 号守卫机检；70-verify 忽略该键。E2（2026-10-07 审查）：注记一律放顶层 _ 键，条目内不得出现 _ 注记键（70-verify 键即契约会 rc=2）。",
+  "task-<id>-示例-产物文件": {
+    "files": [
+      {
+        "path": "20-lit/25-citation-audit.md",
+        "min_bytes": 9000,
+        "contains": [
+          "机制承载核对",
+          "不支持项：0 条",
+          "文本改动留痕"
+        ],
+        "forbid": [
+          "TODO",
+          "TBD",
+          "AUTHOR CONFIRM"
+        ],
+        "min_matches": {
+          "pattern": "^\\|\\s*\\d+",
+          "min": 20
+        },
+        "count_distinct": {
+          "pattern": "^\\|\\s*\\d+",
+          "min": 20,
+          "scope": "line"
+        },
+        "contains_regex": [
+          "declin\\w+ by [1-9][0-9]*(\\.[0-9]+)?\\s*%|变化率超过 [1-9][0-9]*\\s*%"
+        ]
+      },
+      {
+        "path": "30-manuscript/36-draft.md",
+        "min_bytes": 45000,
+        "word_count": [
+          7000,
+          9500
+        ],
+        "forbid_regex": [
+          "\\bcolor\\b"
+        ]
+      }
+    ]
+  },
+  "task-<id>-示例-数据与缺席断言": {
+    "json_files": [
+      {
+        "path": "20-lit/22-refs.json",
+        "min_items": 20,
+        "require_keys_all": [
+          "ref_no",
+          "title",
+          "journal",
+          "year",
+          "doi"
+        ],
+        "require_values": {
+          "two_source_verified": true
+        }
+      },
+      {
+        "path": "20-lit/21-candidates.json",
+        "min_items": 1,
+        "require_keys": [
+          "query",
+          "hits"
+        ]
+      }
+    ],
+    "globs": [
+      {
+        "pattern": "40-figures/data/*.pdf",
+        "min_count": 4,
+        "min_bytes_each": 3000
+      }
+    ],
+    "absent_paths": [
+      "70-tools/78-scratch/oneoff.py"
+    ],
+    "run": "python 70-tools/72-assemble-draft.py --selftest",
+    "files": [
+      {
+        "path": "20-lit/22-refs.json",
+        "min_bytes": 2000,
+        "token_source": {
+          "contains": {
+            "two_source_verified": "references/30-literature-pipeline.md:12"
+          }
+        }
+      }
+    ]
+  }
+}

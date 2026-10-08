@@ -1,0 +1,34 @@
+{
+  "id": "task-<kebab-case>",
+  "name": "<人类可读名称>",
+  "brief": "<一句话：做什么 + 产出物 + 边界>",
+  "module": "mod-<data|lit|draft|fig|final>",
+  "depends_on": [
+    "<上游 task-id，必须已完成>"
+  ],
+  "estimated_hours": 2.0,
+  "difficulty": "low",
+  "requires": [
+    "python",
+    "model:turbo"
+  ],
+  "acceptance_criteria": [
+    "<可机检或可客观判定；含精确产物路径与字段；避免模糊词>",
+    "<口径与边界：n / 单位 / 缺失处置 / 不得声称的内容>",
+    "<与上下游的一致性约束（编号、术语、字数、图号）>"
+  ],
+  "files_to_read": [
+    {
+      "path": "<相对项目根，只有目录时用尾斜杠>",
+      "priority": "must_read",
+      "hint": "<为什么读它>"
+    }
+  ],
+  "files_to_edit": [
+    "<≤5 个；连带改动的既有文件也放这里，不要依赖 exempt_files>"
+  ],
+  "exempt_files": [],
+  "verify_command": "python 70-tools/70-verify.py task-<kebab-case>",
+  "_verify_command_两制注记_F12": "新项目用 70-tools/70-verify.py（install.py project 模式 vendor 的规范路径）；paper1 冻结档维持 scripts/verify.py（历史 verify_command 不可改）；用 paper-pipeline 生成器从 materials 冻结侧档生成时加 --verify-layout standard 自动重写。形态锁死：python <脚本> task-<id>。",
+  "source": "debug:<profile-id>-v<profile-version>"
+}

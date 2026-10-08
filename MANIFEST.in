@@ -1,0 +1,44 @@
+# 发布面单一真源（纯白名单）：清单内 = 发布，清单外 = 开发层。
+# 维护纪律：发布目录新增文件必须同步加一行 include（scripts/76 号 G7 守卫机检覆盖完整性）；
+# scripts/76-doc-refs-selftest.py 为本仓文档卫生自检，属开发层，刻意不列（装出去必红）。
+# scripts/79-release-publish.py 为发版器（开发面→最小纯净版→push 独立发布仓），属开发层，
+# 刻意不列（发行版自身不该带发版器，否则自指循环）；76 号 DEV_TIER 已声明。
+# 仓根维护件 AGENTS.md / ROADMAP.md / .gitignore 亦属开发层（不发货）：与 README「开发层」清单
+# 及 scripts/76-doc-refs-selftest.py 的 DEV_TIER 一本账（E6）；未归类跟踪件由 G7 仓根对账判红。
+include SKILL.md
+include README.md
+include VERSION
+include MANIFEST.in
+include LICENSE
+include install.py
+include profiles/00-base-empirical.yaml
+include profiles/10-clinical.yaml
+include profiles/10-materials-chemistry.yaml
+include profiles/20-social-science.yaml
+include profiles/30-cs-ml.yaml
+include scripts/30-gen-proposals.py
+include scripts/35-refs-gate.py
+include scripts/40-style-check.py
+include scripts/45-consistency-check.py
+include scripts/70-verify.py
+include scripts/72-assemble-draft.py
+include scripts/72-compose-raster-figures.py
+include scripts/72-latex-build-check.py
+include scripts/75-verify-selftest.py
+include scripts/78-assertions-selftest.py
+include assets/00-proposal.template.json
+include assets/10-verify-manifest.template.json
+include references/00-project-layout.md
+include references/10-idea-to-skeleton.md
+include references/15-figure-guidance.md
+include references/20-claim-framework.md
+include references/30-literature-pipeline.md
+include references/31-literature-endpoints.md
+include references/40-draft-to-latex.md
+include references/50-orchd-runbook.md
+include references/60-capability-specs.md
+include static/manifest.yaml
+include static/elsevier-numbered.md
+include static/md-single-source.md
+include static/lab-experimental-reporting.md
+include static/40-ai-cavity-wordlist.yaml

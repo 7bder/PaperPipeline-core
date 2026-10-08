@@ -1,0 +1,26 @@
+version: 1
+# static/ 规则碎片索引（规格真源：references/60-capability-specs.md §3）。
+# 碎片 = 跨出版社/跨刊的共性条款，由领域档的可选顶层键 `fragments: [<id>...]` 声明后
+# 原样注入生成物 rules.fragment.md；未声明即完全不读本文件。
+# axes 只做一致性提示（不符打印 warning，不改退出码）；每条至少 2 个键。
+fragments:
+  - id: elsevier-numbered
+    fragment: elsevier-numbered.md
+    axes:
+      publisher: elsevier
+      citation_style: numbered
+    note: "编号制正文标记 + 逐条列举 + DOI 必列 + 允许跳号"
+
+  - id: md-single-source
+    fragment: md-single-source.md
+    axes:
+      paper_type: research-article
+      citation_style: numbered
+    note: "md 真源 / tex 派生的分工与零占位符口径，换出版社不变"
+
+  - id: lab-experimental-reporting
+    fragment: lab-experimental-reporting.md
+    axes:
+      paper_type: research-article
+      evidence_form: lab-experimental
+    note: "实验型稿件的图件、重复数与披露口径"

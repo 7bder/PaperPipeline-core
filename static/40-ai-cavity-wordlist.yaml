@@ -1,0 +1,58 @@
+# 无 AI 腔机检词表 —— `scripts/40-style-check.py` 的唯一词条来源
+#
+# 键即契约（references/60-capability-specs.md §1.3）：
+#   version / categories / hedging / quantitative_signal。
+#   `hedging`、`quantitative_signal`、`categories` 任一缺键 → 脚本 rc=2 并报缺失键名；
+#   `categories` 允许 0..n 个（空列表 = 不报禁用词，仍会查量化段的 hedging 覆盖）。
+# `match` 三值（每条 category 必须显式给出，缺键即 rc=2，不猜默认值——word 与 substr
+#   的假阳性差一个数量级，猜错等于把判据方向性搞反）：
+#   word   = 词边界 + 不区分大小写（`may` 不命中 `dismay`）
+#   phrase = 不区分大小写子串（多词套话用这个）
+#   substr = 原样子串（大小写敏感，给缩写/专名用）
+# 词条只在本文件增删，改脚本即违反 AC3；`--wordlist` 可指向换领域的临时词表自测。
+# hedging.terms 永不作为禁用项报错，只用于 §1.4 规则 3：量化结论句所在段有无收窄措辞。
+#   理由见 references/20-claim-framework.md §6——hedging 是"部分支持→降级措辞"的处置手段。
+# quantitative_signal.regex 决定"什么算量化结论句"。本式只覆盖"数字 + 单位"写法，
+#   统计量写法（p = 0.03、OR 2.1、beta、HR）不在其中：那是临床/社科档换词表时补的扩展点，
+#   不在此处预先塞进基座词表（未vetted 的式子会把大量正常段判成缺 hedging）。
+version: 2
+categories:
+  - id: hype
+    match: word
+    terms: ["unprecedented", "groundbreaking", "revolutionary", "first ever",
+            "paradigm shift", "game changer", "cutting-edge", "state-of-the-art",
+            "novel approach", "remarkable", "astonishing", "stunning"]
+  - id: cavity
+    match: phrase
+    terms: ["delve into", "it is important to note that", "plays a crucial role",
+            "in today's world", "comprehensive understanding", "it is worth noting that",
+            "in recent years", "furthermore", "moreover", "additionally",
+            "in conclusion", "notably", "it should be noted that",
+            "in summary", "last but not least", "first and foremost",
+            "a testament to", "in the realm of", "in the landscape of",
+            "paves the way", "sheds light on", "opens new avenues",
+            "holds great promise", "significant implications",
+            "holistic approach", "seamlessly integrate", "leverage the power",
+            "harness the power", "unlock the potential", "embark on a journey",
+            "navigate the complexities", "foster innovation", "drive innovation",
+            "underscore the importance", "highlight the significance",
+            "deep dive", "one size fits all", "in order to"]
+  - id: vague_attribution
+    match: phrase
+    terms: ["studies have shown", "it is widely accepted", "researchers believe",
+            "it is known that", "experts agree", "it has been demonstrated that",
+            "it is generally believed", "many studies", "numerous studies",
+            "recent studies have", "it is widely known", "scientists say",
+            "research suggests that", "it is commonly accepted"]
+hedging:
+  terms: ["suggests", "indicates", "may", "might", "likely", "appears to",
+          "consistent with", "within the measurement uncertainty"]
+quantitative_signal:
+  regex: "[0-9]+(\\.[0-9]+)?\\s*(%|MPa|GPa|kV|mA|nm|um|μm|wt\\s*%|at\\s*%|eV|°C|mg|g/L)"
+  # F9（2026-10-06）：按域拆分的量化信号组，--domain <名> 选择；缺省用上面的 regex（= material）。
+  # 统计结论句（p/OR/HR/β/F1…）此前不在任何组内，临床/社科/CS 的 hedging 覆盖检查名存实亡。
+  domains:
+    material: "[0-9]+(\\.[0-9]+)?\\s*(%|MPa|GPa|kV|mA|nm|um|μm|wt\\s*%|at\\s*%|eV|°C|mg|g/L)"
+    clinical: "((OR|HR|RR)\\s*[=≈]?\\s*[0-9]+(\\.[0-9]+)?|95\\s*%?\\s*CI|p\\s*[<=]\\s*0?\\.[0-9]+|n\\s*=\\s*[0-9]+|[0-9]+(\\.[0-9]+)?\\s*%)"
+    social: "((β|beta|α|alpha|κ|kappa|r)\\s*=\\s*-?[0-9]+(\\.[0-9]+)?|p\\s*[<=]\\s*0?\\.[0-9]+|n\\s*=\\s*[0-9]+|[0-9]+(\\.[0-9]+)?\\s*%)"
+    csml: "(accuracy|F1|AUC|mAP|BLEU|p\\s*[<=]\\s*0?\\.[0-9]+|n\\s*=\\s*[0-9]+|[0-9]+(\\.[0-9]+)?\\s*%)"

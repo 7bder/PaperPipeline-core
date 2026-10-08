@@ -1,0 +1,94 @@
+# 通用基类：所有实证学科（材料/临床/CS/社科）共通的骨架。
+# 领域档（10-materials-chemistry.yaml 等）继承本档，只写学科差异。
+# 本档不定义具体实验任务（那些由领域档给），只给：
+#   1) 通用 evidence_policy（baseline / n 披露 / raw-vs-processed / 统计措辞 / 坐标轴 / 方法引用）
+#   2) 通用投稿任务 task-back-matter（AI 声明 / COI / DAS / CRediT / Funding / Cover letter）
+#   3) 通用模块定义与依赖图锚点
+id: base-empirical
+version: "1"
+title: 实证研究论文通用骨架（基类）
+
+project:
+  name: empirical-paper
+  brief: 基于已有实验/观察/计算数据的实证研究论文，按 orchd 任务链产出可投稿英文稿件。
+  review_mode: unified
+
+paths:
+  admin: 00-admin
+  data: 10-data
+  lit: 20-lit
+  ms: 30-manuscript
+  fig: 40-figures
+  review: 50-review
+  latex: 60-latex
+  nb: 90-notebooks
+
+modules:
+  - { id: mod-data,  name: 数据基座, role: "数据审计、定量分析与图表规格；不含文献与写作" }
+  - { id: mod-lit,   name: 文献,     role: "需求单、检索验真、全文可得性与引用审计；不含正文写作" }
+  - { id: mod-draft, name: 稿件,     role: "骨架契约与逐节写作、合稿；不含图件制作" }
+  - { id: mod-fig,   name: 图件,     role: "矢量数据图、示意图、光栅图版与规格同步；不含正文写作" }
+  - { id: mod-final, name: 终局,     role: "投稿前评审、定稿、后页声明与排版构建；不含内容再创作" }
+
+# 通用证据口径（所有学科继承；领域档只覆盖与本学科不同的键）
+evidence_policy:
+  # 基类不写字面 `data/`（与本 skill 的编号目录规范 `10-data/` 冲突）。此处给 `{data}` 占位，
+  # 由领域档用自己的 paths.data 覆盖成具体路径——因为生成器只对任务规格做占位替换，
+  # 不替换 evidence_policy（见 30-gen-proposals.py 的 rules_fragment / policy_lines），
+  # 领域档漏覆盖就会在 rules.fragment.md 里留下未解析的 `{data}`，由 78-assertions-selftest.py 拦下。
+  unit_source: "唯一数据源 = 项目 {data}/（含 .provenance），不得引入项目外数据"
+  missing_data: "缺失数据不补点、不外推；图件与正文均须显式标注该缺口"
+  hedging_required: ["单点测量的结论", "文献机制归因", "由相关性推出的因果"]
+  baseline_required: "所有性能 claim 必须指明参照系（裸基材/对照实验/baseline 模型/历史对照）；无参照系的'提升/降低/更优'措辞禁止"
+  n_disclosure: "每个定量结果披露 n、重复次数、误差口径；单次测量图注必须写'representative result, single determination'，不得省略"
+  raw_vs_processed: "provenance 必须区分原始测量值与处理/拟合值；派生数据写明变换方式（平滑/归一/拟合软件）"
+  statistical_wording: "无误差棒或 n=1 的图与正文，禁止 significantly/greatly/dramatically/improved by X-fold"
+  axis_integrity: "纵轴不得截断夸大差异；不从零起必须在图注显式说明"
+  method_citation: "每个实验/测量方法须引用其标准或方法学文献（具体标准号清单由领域 profile 的 domain_checklist 注入）"
+  representative_selection: "图版选帧/选点须说明选择依据（第几次重复的代表帧），不得静默挑图"
+
+# 入口模式（决定前导任务图与人工闸门位置）：
+#   data-first  — 已有一组数据，自己发现故事线，走完整单篇流程（默认）
+#   idea-first   — 有研究问题，agent 搭框架+数据收集计划，你去做实验
+#   multi-paper  — 多组数据，先做 P-1 资产盘点与拆分规划，每篇再走 inherited
+#   inherited    — 已有外部路线图（P-1 产出），跳过故事线发现，直接逐值核对
+entry:
+  mode: data-first
+
+# 通用依赖图锚点：back-matter 在定稿之后；P-1 资产规划在最前置（multi-paper 模式）
+depends:
+  task-back-matter: [task-finalize-manuscript]
+
+# 通用任务：P-1 数据资产盘点与论文组合规划（仅 multi-paper 模式激活）
+tasks:
+  - id: task-data-asset-mapping
+    module: mod-data
+    stage: P-1
+    name: 数据资产盘点与论文组合规划
+    brief: 盘点全部数据组，发现候选故事线，产出论文拆分路线图与共享边界。
+    ac:
+      - "`{admin}/05-data-inventory.md` 逐组盘点数据：测了什么、n、误差口径、可重复性、缺口、原始文件位置。"
+      - "`{admin}/06-storyline-options.md` 列出 2–5 条候选故事线，每条标注用到的数据子集、核心 claim、数据成熟度、缺口、目标刊层级。"
+      - "`{admin}/07-paper-roadmap.md` 给出拆分建议：哪几篇、先后顺序、共享数据边界（同一图在不同篇讲不同 claim）、每篇独立 claim 列表；共享 >50% 数据的两条线建议合并。"
+      - "人工闸门：用户选定论文组合与优先级后，每篇建独立工作空间并拷贝该篇所需数据子集。"
+    read: [{path: "{data}", priority: must_read, hint: 全部原始数据目录}]
+    edit: ["{admin}/05-data-inventory.md", "{admin}/06-storyline-options.md", "{admin}/07-paper-roadmap.md"]
+    hours: 4
+    difficulty: high
+    verify: "python {verify_tool} task-data-asset-mapping"
+
+  - id: task-back-matter
+    module: mod-final
+    stage: P6
+    name: 投稿后页声明与 Cover letter
+    brief: 产出 AI 声明、COI、DAS、CRediT、Funding、Cover letter、Highlights 素材清单。
+    ac:
+      - "`{ms}/39-back-matter.md` 含 AI 使用声明（未用 AI 亦须声明）、Conflict of Interest、Data Availability Statement、CRediT 作者贡献逐人映射（14 标准角色词表逐人标注：Conceptualization、Methodology、Software、Validation、Formal analysis、Investigation、Resources、Data curation、Writing – original draft、Writing – review & editing、Visualization、Supervision、Project administration、Funding acquisition；Funding acquisition 与 Funding 声明交叉一致）、Funding 基金号与 Acknowledgements。"
+      - "F11（2026-10-06）投稿硬要素：ORCID 逐作者登记（缺号者列待补，不得静默省略）；数据集作正式引用（独立文献条目给 数据集名称 + 仓储 + DOI/访问号，并计入文献表）；License 与版权选择（目标刊的开放获取许可或转让声明，写明选定项）；Supplementary material 清单（逐件给 文件名 + 内容概述 + 引用位置）。"
+      - "Cover letter 草稿写明目标刊适配理由与核心贡献；若本稿源自学位论文或已发表工作，显式声明增量贡献与重合部分。"
+      - "Highlights 条数与 Graphical abstract 素材状态按目标刊要求核对（publisher 规格缺失时写待补，不得静默跳过）。"
+    read: [{path: "{admin}/01-meta.json", priority: must_read, hint: 目标刊与作者信息}, {path: "{admin}/03-journal-selection.md", priority: reference, hint: 目标刊格式要求}]
+    edit: ["{ms}/39-back-matter.md"]
+    hours: 2
+    difficulty: low
+    verify: "python {verify_tool} task-back-matter"

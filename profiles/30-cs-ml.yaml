@@ -1,0 +1,948 @@
+# 领域档：计算机科学与机器学习（实验型研究：模型/系统/数据的量化比较）
+# 生成器：scripts/30-gen-proposals.py。本档与 00-base-empirical.yaml 的关系＝CS/ML 学科差异，
+# 通用口径（baseline 参照系 / n 披露 / raw-vs-processed / 坐标轴完整性 / 后页声明）一律继承。
+# 本档相对材料档的三处 CS/ML 加严（任务卡 AC 的来源）：
+#   1) baseline 原文核对（page-level）：他方报告的数值必须回到**原文表号/页码**逐条核对，
+#      本文复现值与他方报告值不一致者登记为缺口，不得改写他方数值以对齐自家结果；
+#   2) 复现声明：代码来源、运行环境、超参搜索空间与预算、随机种子清单、数据划分版本、
+#      指标实现出处必须逐条编号登记，并以「待确认项：…」固定收口行声明有无缺失
+#      （要素齐备写「待确认项：无」），不以「不写这行」的方式静默省略；
+#   3) 多种子方差与消融披露：进入结论的指标必须报 mean ± std 与种子数，主图必须画误差棒；
+#      每个主张为贡献的模块必须有消融行（含标准差），并把该口径注入方法学与结果段落。
+#
+# 与 10-materials-chemistry.yaml / 10-clinical.yaml 的分工（改本档前先读 scripts/78-assertions-selftest.py 的守卫）：
+#   · 链条任务（核对/需求单/检索筛选/双库验真/全文盘点/选刊/引言/结果讨论/结论摘要/合稿/引用审计/
+#     评审/定稿/排版/后页，与 15 个交集 id 一一对应，共 15 个）
+#     的**断言块逐字沿用**材料档——78 号「共有任务断言同源」守卫逼的就是这条一致性，
+#     断言是"领域无关的结构性下限"，学科差异全部体现在 AC 文本里；
+#   · 断言在 CS/ML 不成立的四类任务**处置并不相同**（与材料档同 id 即被 78 号守卫 3 判为"断言必须
+#     逐字相同"，改不动判据只能换 id）：2 类**另起 id**（analyze-data→analyze-baselines、
+#     write-experimental→write-implementation）；2 类**整块删除**（无 SEM/TEM 图版摄入、无图版-骨架
+#     同步，本域无对应产物，故不配新 id）；另有 2 个本域新增任务（declare-reproducibility、
+#     tabulate-ablations）不属这四类，是"材料档没有、本域必须有"。
+#     `verify_assertions_template` 已按 task/path 归并（task-deep-merge-assertions-merge）⇒ 子档可给继承任务追加断言、父档其余条目保留，不再整块重写；
+#   · 任务 id 与材料档的集合差 = 8（去掉 4 个材料特有、新增 4 个本域特有），口径是**生成物与合并视图**
+#     （`--out build/csml` 展开 24 份 vs 材料档 24 份，对称差实测 8），AC4 的上限按此核对；
+#     若只比两档文件自身 `tasks:` 列表则是 9——本档多一条**只带 `inject`**（reproducibility_statement、
+#     reporting_standard）的 `task-back-matter` 覆盖声明（该 inject 已由 task-deep-merge-child-inject 生效；
+#     它确实让本档文件的 `tasks:` 列表多出一个 id），而 `tasks:` 段按 id 合并、
+#     基类那条仍在，生成物层面两档都含 back-matter，差回落到 8；
+#     **余量为 0**：8 个差集里 4 个来自改名（analyze-data→analyze-baselines、
+#     write-experimental→write-implementation），任何再次改名都直接计入差集并破 AC4，
+#     要改 id 必须先扩 AC4 上限或合并任务（2026-09-27 spec 审查 MINOR-4）；
+#   · 本档 verify_assertions_template 的**实质断言任务数固定为 20**：78 号既是棘轮下限
+#     （<20 判失败），反向对照又取"实质任务最多的档"做基线并要求"删一条即跌破下限"
+#     （>20 会让该档 21 条反向对照全红）；取样档用严格 `>` 比较，四档并列 20 时按文件名排序落在
+#     10-clinical，本档加到 21 才会成为取样档。三个图件任务只由通配（存在性 + 体积下限）覆盖，
+#     与材料档的 redraw/draw-schematics/compose-raster 同构。
+#   · 不得声明顶层 `fragments:` 键——75 号有"真实档未提前声明 fragments"守卫（零回归基线）。
+#   · citation_policy.discovery_sources 只准写 `35-refs-gate.py:87` 的 INDICES 四家
+#     （openalex / crossref / semantic_scholar / arxiv）；dblp 等未实现源不得声明（声明即空头能力）。
+#
+# 本档已知、但**不在本任务声明面内**的六处外部约束（2026-09-27 spec 审查三/四轮登记，待 idea 落地）：
+#   1) 数值形态（小数 + ±、同一行多列）写不成 contains_regex/min_matches：78 号的可满足性探针
+#      PROBES（scripts/78-assertions-selftest.py:90-91）没有小数与带符号样本，此类正则一律被拒。
+#      本档因此只能在探针放行的 `\d`、`\|`、`^\|`、`^\|\s*\d+`、`Fig\. ?\d+` 五类形态内设形体下限
+#      （见模板段落注释）；要真正机检"每格都是 mean ± std"须先给 PROBES 补 "| 1 | 0.81 ± 0.02 |" 类样本。
+#   2) task-select-journal 的 token 分区/开放获取/版面 逐字继承自材料档，而该 id 落在 78 号四档
+#      交集内（单档改即破同源守卫），对以会议为主要目标的 CS/ML 属错配判据，须四档同改。
+#   3) 各节 word_count 上界之和 982（133+533+23+60+233，即 31/33/30/34/32 五节，按每句一行重算；旧词口径 14750 见史）> 继承的
+#      `36-draft [3000,12000]`；draft 断言同在交集内，
+#      本档单改不能根治。
+#   4) 计数原语没有"按列 / 按行 / 唯一性"语义：`min_matches` 走 len(re.findall(...))
+#      （scripts/70-verify.py:323），整列复制同一数值、每格填无意义数字串、同一条 Fig. 1 复制
+#      四行、620 词凑 word_count 的填充在计数上与合规产物不可区分——对抗实测 12 例填充中 10 例
+#      rc=0（M-03/M-04/M-06/M-07/M-08/M-08b/M-09/M-10 与 M-05/M-05b；后两例是"谎称已满足"的空壳，
+#      其数字位随节号/页码位数浮动——同一空壳形态实测 22（`q5_verify.py:VG_m05`）、23
+#      （`sr_csml_mut:M-05`）、27（`sr_csml_mut:M-05b`）、28（`q5_verify.py:VG_m05b`）乃至整列复制
+#      的 66（`sr_csml_mut:M-06`），而"全部未满足"的诚实登记按 AC1 定位列的两个同等合法分支在
+#      **12~24** 之间浮动：只写表图号 12（`m7r7_vv2.py:TAB_full`）、写 `节 + 页` 18（`m7r7_vv2.py:PP_full`；
+#      同构造的 `fa_min:MIN_09_ZEROPREP` 亦 18，但该例只列 1 条收口项、非 AC2 完整形态）、24
+#      （`q3_run:MY_09_PENDING`）——第八轮按第七轮 spec 审查 MAJOR-1 把两个分支写进 AC1 明文，撤回上一版
+#      "定位列每行 2 位 ⇒ 可辩护下限 18"的口径（该句把 AC 义务记到了 `^\|\s*\d+` 那道正则头上，而实测 12 位
+#      的合规登记 rc=0、任何 ≥13 的下限都把它判死），固定闭区间"18~24"也装不下这些外观同样合规的写法；
+#      两侧区间重叠 ⇒ 计数原语分不开二者），本档只能靠 AC
+#      文本 + 人工审查拦这类形态，需要新原语（如 count_distinct / 逐行分列匹配）才能机检。
+#   5) 收口行的行首契约无机检：`^待确认项` 这类以中文为锚点的正则命中不了任何 PROBES（探针样本
+#      全 ASCII），contains 只认子串，故「待确认项」写成表行也过。同样须先给 PROBES 补中文样本。
+#   6) 继承面（与材料档逐字同源、单档改即破 78 号守卫 3）另有四处形态/阈值越权，实测均误杀，
+#      须四档同改：task-citation-audit 的 `^\|\s*\d+`（首列直接放引用号 `[12]` 的合规表命中 0）、
+#      task-write-results-discussion 的 `Fig\.\s*\d+`（ACM 惯例全称 `Figure 1` 被杀，AC 未规定缩写）、
+#      task-assemble-draft 的 `\*\*Fig\. \d+\.\*\*`（按 AC 字面写 `**Fig.1.**` 无空格即被杀）、
+#      task-presubmit-review 的 `CRITICAL|MAJOR|MINOR` ≥10（干净稿问题不足 10 条即被杀，AC 无条数）。
+extends: 00-base-empirical.yaml
+id: cs-ml
+version: "1"
+title: 计算机科学与机器学习实验型研究论文
+tool_dir: 70-tools
+verify_tool: 70-tools/70-verify.py
+verify_manifest: 70-tools/71-verify-manifest.json
+
+project:
+  name: cs-ml-research-paper
+  brief: 基于既有实验数据（训练日志、评测脚本输出、消融运行记录）的 CS/ML 研究论文，按 orchd 任务链产出可投稿英文稿件。
+  review_mode: unified
+
+axes:
+  paper_type: research-article
+  evidence_form: computational-study
+  publisher: acm
+  language: en
+  reporting: [reproducibility-checklist]   # 可复现性清单轴值：由 evidence_policy.reporting_standard 消费
+
+# 模块定义与依赖图锚点全部继承基类（mod-data / mod-lit / mod-draft / mod-fig / mod-final）。
+paths:
+  admin: 00-admin
+  data: 10-data
+  lit: 20-lit
+  ms: 30-manuscript
+  fig: 40-figures
+  review: 50-review
+  latex: 60-latex
+  nb: 90-notebooks
+
+# CS/ML 口径：继承基类的通用键，覆盖与实验型计算冲突者，并新增本档特有的六键。
+# 注意：这些值**不做占位符替换**（生成器只替换任务规格），故路径一律写字面量，
+# 且不得残留花括号——78 号有「rules.fragment 无未解析占位符」守卫。
+evidence_policy:
+  # 覆盖基类占位版 unit_source（基类故意写 {data}，漏覆盖即生成物留脏）
+  unit_source: "唯一数据源 = 项目 {data}/（训练日志、评测输出、指标导出，含 .provenance 与运行清单），不得引入项目外数据、不得把他方论文表格里的数值当作本稿实验结果陈述"
+  hedging_required: ["单次运行推出的稳定性", "由消融推出的机制归因", "在子集或子任务上的提升外推到全量", "未做统计检验的'显著优于'"]
+  baseline_required: "每条性能 claim 必须写明对照（哪一条 baseline、其实现来源、其原文报告值）与比较口径（同数据划分、同指标实现、同算力预算与否）；无参照系的'提升/优于/最优'措辞禁止，跨协议比较只能写成 comparable under protocol X"
+  seed_variance: "进入结论的每个指标必须披露随机种子数与 mean ± std（或中位数与极值）；只报最优一次运行、或只报单次运行的表格与图，判为未报告方差；种子数 <3 者显式登记为缺口（G 编号）并说明代价"
+  baseline_provenance: "baseline 原文核对（page-level）：{data}/11-analysis.md 逐行给 方法名、指标、他方原文报告值、原文表号与页码、本稿复现值、mean ± std、偏差判定；与原文不一致或与本稿划分不可比者以 G 编号登记缺口，不得改写原文数值以对齐自家结果"
+  reproducibility_statement: "复现声明六要素逐条登记：代码来源（仓库与 commit 或随稿附件）、运行环境（框架/版本/驱动）、超参数（搜索空间、采样方式、选定值与搜索预算）、随机种子清单、数据划分与版本（含许可与获取日期）、指标实现出处（自实现或引用他方脚本）。缺失者以「待确认项：<项目>：需谁提供什么」行呈现，六要素齐备时以「待确认项：无」收口，该收口行不得整句省略"
+  ablation_required: "每个被主张为贡献的模块必须有对应消融行：{data}/14-table-ablations.md 逐行给 配置、指标、mean ± std、变化方向与支撑的 claim 编号；未做消融的贡献不得进入结论与摘要"
+  n_disclosure: "每个定量结果披露 数据集与划分的样本数（train/val/test）、迭代数、评测次数与种子数；单次测量图注必须写'representative result, single run'，不得省略"
+  raw_vs_processed: "provenance 必须区分日志原始指标值与处理/择优值（最后 k 步均值、跨种子聚合、去掉离群运行）；派生值写明聚合方式与脚本"
+  statistical_wording: "无多种子方差或未做检验的图与正文，禁止 significantly/outperforms/superior/greatly/consistently better；声称优于他方须给差值、标准差与检验（或显式写明未做检验）"
+  axis_integrity: "纵轴不得截断夸大差异；不从零起必须在图注显式说明；主比较图的每个数据点必须带误差棒或写明该点为单次运行"
+  method_citation: "每个复现的方法/模型须引用其原文并标注实现来源（官方代码/自实现），具体条目清单见本档 domain_checklist"
+  representative_selection: "定性图版（注意力图、生成样例、失败案例）必须写明样本选择依据（第几号样本、按何条件入选），不得静默挑好看样本"
+  missing_data: "缺失运行与未跑完的消融不补点、不外推；图件与正文均须显式标注该缺口并按 G 编号登记"
+  domain_checklist:
+    - "数据集须给版本、许可、获取日期与划分口径（官方划分或自建划分），自建划分给切分脚本与随机种子"
+    - "复现的每个 baseline 须给原文报告值与出处（表号 + 页码）、实现来源（官方/自实现）与超参搜索预算"
+    - "超参数给搜索空间、搜索方式（网格/随机/贝叶斯）、试验次数与最终选定值；学习率、批大小、训练轮数不得只写“经验设置”"
+    - "算力与运行成本给硬件型号、卡数、单卡显存与总 GPU-hours；效率类结论必须与算力口径同段落披露"
+    - "代码与权重可得性给出显式声明（公开仓库地址、随稿附件、或说明不提供的原因）"
+    - "指标实现给来源（官方评测脚本/自实现）与他方数值一致性核对"
+  reporting_standard: "可复现性清单按 axes.reporting 声明执行（reproducibility-checklist）：逐条给 状态（已满足 / 未满足 / 不适用）+ 正文定位（节 + 页或表图号）+ 未满足项的修法；不适用项须写明理由，不得整片留空"
+  forbidden_claims: ["首次/突破/最优/全局最优/SOTA", "未经消融支持的机制归因", "单次运行称稳定或一致", "未经同协议比较的效率或泛化结论", "未测硬件条件下的运行时间类断言"]
+
+figure_policy:
+  vector_data_figures: true
+  raster_composites: true        # 定性对比图版（生成样例/注意力图/失败案例网格）；纯表格类子领域删本任务并置 false
+  caption_must_state: ["种子数与误差棒口径（mean ± std 的聚合方式）", "每条 baseline 的实现来源与原文出处", "缺失运行不补点", "坐标轴单位、是否截断与归一化口径"]
+
+citation_policy:
+  style: numbered
+  discovery_sources: [openalex, crossref, semantic_scholar, arxiv]
+  verification: { min_title_similarity: 0.70, require_journal_year_consistency: true, check_retraction: true }
+  fulltext_gate: { mode: strict, tristate: [verified, id_mismatch, suspected, unresolvable] }
+  audit_required: "逐条列出已引文献的位置、判定（支持/部分支持/不支持）与判据级别（全文页/题录级/未核）；作为 baseline 数值出处的文献单独标注其表号与页码，其判定不得低于全文页级"
+
+# 实质断言共 20 个任务（棘轮下限与反向对照的共同要求，见文件头说明）。
+# 三条硬约束由 scripts/78-assertions-selftest.py 机检：
+#   ① path 写字面量（本块不做占位替换）；② path 落在该任务 files_to_edit ∪ files_to_read 内；
+#   ③ json_files 用 require_keys* 必配 min_items（空列表 fail-open 已由 70-verify.py 拦，但守卫仍要求写明）。
+verify_assertions_template:
+  - task: "*"
+    apply_to: edit_files_text
+    forbid: ["AUTHOR CONFIRM", "TODO"]
+    min_bytes: 200
+    exclude: ["30-manuscript/sections/*"]   # 写作分节在合稿前须保留 AUTHOR CONFIRM 待作者裁定（与材料档同口径，F6）
+  - task: "*"
+    apply_to: edit_files_binary
+    min_bytes_each: 5000   # 与材料档同源；5KB 只拦占位/坏文件、不误伤小矢量。"真实图件 ≥28KB"来自外部项目实测，本仓无图件工件可复测（出处为外部，不作本档判据依据）
+
+  # ── 与 10-materials-chemistry.yaml 逐字同源链条的 15 条 ──────────────────────────
+  - task: task-audit-data            # AC「缺口清单（G 编号）」「口径」「逐值核对」
+    files:
+      - path: 10-data/10-audit.md
+        contains: ["核对", "缺口", "口径"]
+        # F9（2026-10-07）：原 min 3 对「零缺口清洁数据」判死（假杀）——改为「≥3 条 G 编号 或
+        # 显式声明零缺口」二选一（min 1）；残缺/留空产物仍被 contains「缺口」+ 本键拦住。
+        min_matches: { pattern: "G\\d+|缺口\\s*[:：]?\\s*0\\b|零缺口|无缺口", min: 1 }
+        token_source:                 # AC「逐值核对表」「缺口清单（G 编号）」；口径的规范落点见 10-idea-to-skeleton P1 表
+          contains:
+            核对: "ac"
+            缺口: "ac"
+            口径: "references/10-idea-to-skeleton.md:10"
+  - task: task-claim-map             # references/20 §2 字段表：claim_id=C-1…、evidence_strength、boundary、needs
+    files:
+      - path: 20-lit/20-claims-map.md
+        contains: ["claim_id", "evidence_strength", "boundary", "needs"]
+        # F9：原 min 8 对「claim 数 <8 的小课题」判死——改为「≥8 条 C- 编号 或 显式零声明」。
+        min_matches: { pattern: "C-\\d+|claim\\s*数\\s*[:：]?\\s*0\\b|零 claim|无 claim", min: 1 }
+        token_source:                 # AC「每行含 claim_id…needs、refs、evidence_strength、boundary…字段」
+          contains:
+            claim_id: "ac"
+            evidence_strength: "ac"
+            boundary: "ac"
+            needs: "ac"
+  - task: task-screen-existing-refs  # AC「逐条给出 keep/drop 与理由，覆盖既有库全部条目」
+    files:
+      - path: 20-lit/20-screening.md
+        contains: ["keep", "drop"]
+        # F9：原 min 20 对「既有库 <20 条」判死——改为「逐条 keep/drop 或 显式声明库为空」。
+        min_matches: { pattern: "keep|drop|无既有条目|既有库为空|0 条既有", min: 1 }
+        token_source:                 # AC「逐条给出 keep/drop 与理由」
+          contains:
+            keep: "ac"
+            drop: "ac"
+  - task: task-search-verify-refs    # AC 字段清单 + references/30 §1 ② 验真判据（grade/two_source_verified/verify_checks）
+    json_files:
+      - path: 20-lit/21-candidates.json
+        min_items: 1  # F-9R（2026-10-07 二轮）：库体量下限不设领域无关硬条数（AC 无条数义务），≥1 条即放行
+        require_keys: ["title", "doi", "source", "verify_checks"]
+        token_source:                 # 字段清单出自 AC「每条入库记录的字段（…）完整」；source 为 AC「记录多源命中」的落库形态
+          require_keys:
+            title: "ac"
+            doi: "ac"
+            source: {src: "ac", term: 多源命中}
+            verify_checks: "ac"
+      - path: 20-lit/22-refs.json
+        min_items: 1  # F-9R（2026-10-07 二轮）：库体量下限不设领域无关硬条数（AC 无条数义务），≥1 条即放行
+        require_keys_all: ["ref_no", "authors", "title", "journal", "year", "doi",
+                           "grade", "verify_checks", "two_source_verified"]
+        token_source:                 # 字段清单出自 AC「每条入库记录的字段（…）完整」；two_source_verified 出自 references/30 验真判据行
+          require_keys_all:
+            ref_no: "ac"
+            authors: "ac"
+            title: "ac"
+            journal: "ac"
+            year: "ac"
+            doi: "ac"
+            grade: "ac"
+            verify_checks: "ac"
+            two_source_verified: "references/30-literature-pipeline.md:12"
+  # B06b（B06，round3 A-5）：终局 strict 全文验真门——不选 `run: 35 --mode strict` 的理由：
+  # install.py 只 vendor 70-verify + 72 三件进项目，35 不在生成项目内，run 必失败；改用 70 的
+  # require_values 逐条判 22-refs.json 的 two_source_verified 必须真为 true（未验真即 rc=1）。
+  - task: task-finalize-manuscript
+    json_files:
+      - path: 20-lit/22-refs.json
+        min_items: 1
+        require_values: {two_source_verified: true}
+  - task: task-lit-fulltext-inventory # AC「按可得性分层（机制承载 / 背景支撑 / 备选）」
+    files:
+      - path: 20-lit/24-fulltext-inventory.md
+        contains: ["机制承载", "背景支撑", "备选"]
+        token_source:                 # AC「按可得性分层（机制承载 / 背景支撑 / 备选）」
+          contains:
+            机制承载: "ac"
+            背景支撑: "ac"
+            备选: "ac"
+  - task: task-select-journal        # AC「影响因子/分区、版面与开放获取费用」
+    files:
+      - path: 00-admin/03-journal-selection.md
+        contains: ["分区", "开放获取", "版面"]
+        token_source:                 # AC「影响因子/分区、投稿周期、版面与开放获取费用」
+          contains:
+            分区: "ac"
+            开放获取: "ac"
+            版面: "ac"
+  - task: task-write-introduction    # AC「背景类引用只出现在本节」+ references/20 §5 落位：本节必须有编号引用
+    files:
+      - path: 30-manuscript/sections/31-introduction.md
+        word_count: [33, 133]
+        min_matches: { pattern: "\\[\\d+", min: 1 }   # B07b：AC「本节必须有编号引用」无**条数**义务 → 领域无关下限降 min 1（变更须走 FLOOR_SNAPSHOT 点名 AC 出处）
+  - task: task-write-results-discussion # AC「按骨架的图表顺序推进，逐图逐表」
+    files:
+      - path: 30-manuscript/sections/33-results-discussion.md
+        word_count: [133, 533]
+        min_matches: { pattern: "\\bFigs?.\\s*\\d+\\b|\\bFigure\\s+\\d+", min: 1 }   # F6: 认 Fig. 缩写与 Figure 全称两态；B07b：AC 无图**条数**义务 → 降 min 1
+  - task: task-write-conclusion-abstract # AC「摘要…无引用、无未定义缩写」「行数区间」
+    files:
+      - path: 30-manuscript/30-abstract.md
+        word_count: [8, 23]
+        forbid_regex: ["\\[\\d+\\s*[,\\]]"]
+      - path: 30-manuscript/sections/34-conclusion.md
+        word_count: [13, 60]
+  - task: task-assemble-draft        # AC「图注编号 Fig.1..N 唯一且连续」「37 每条含 …DOI」
+    files:
+      - path: 30-manuscript/36-draft.md
+        word_count: [187, 1000]              # F3: 覆盖四档节区间和；原 [3000,12000] 与各节上界和 13750-14750 自相矛盾。R5 按每句一行重算：节下界和最小 188（cs-ml）、节上界和最大 982（cs-ml），draft [187,1000] 覆盖
+        min_matches: { pattern: "\\*\\*Figs?.?\\s*\\d+\\.", min: 1 }   # F6: 容许 **Fig.1.** 无空格形态；B07b：AC「图注编号 Fig.1..N」无 N 义务 → 降 min 1
+      - path: 30-manuscript/37-references.md
+        contains: ["DOI"]
+        # F-9R（2026-10-07 二轮）：原 min 20 对「参考文献 <20 条」的合规小论文判死（AC 无条数义务）
+        # ——改「≥1 条编号引用 或 显式声明条数」二选一（min 1，残缺样本无声明仍红）。
+        min_matches: { pattern: "\\[\\d+\\]|参考文献\\s*(?:共|数)?\\s*[:：]?\\s*\\d+\\s*条|无参考文献|零参考文献", min: 1 }
+        token_source:                 # AC「37 每条含 authors/title/journal/year/DOI」
+          contains:
+            DOI: "ac"
+  - task: task-citation-audit        # AC「判定（支持/部分支持/不支持）与判据级别（全文页/题录级/未核）」
+    files:
+      - path: 20-lit/25-citation-audit.md
+        contains: ["部分支持", "不支持", "未核"]
+        # F-6 首列容许 [n] 与裸数字两态；F-9R（2026-10-07 二轮）原 min 15 对「审计表 <15 行」判死
+        # ——改「≥1 行 或 显式声明条数」二选一（min 1）。
+        min_matches: { pattern: "^\\|\\s*\\[?\\d+]?|审计(?:表)?\\s*共\\s*\\d+\\s*条|无审计条目|零条目|审计表为空", min: 1 }
+        token_source:                 # AC「判定（支持/部分支持/不支持）与判据级别（全文页/题录级/未核）」
+          contains:
+            部分支持: "ac"
+            不支持: "ac"
+            未核: "ac"
+    json_files:      # 审计只对已引条目负责 → 库本身必须逐条字段完整
+      - path: 20-lit/22-refs.json
+        min_items: 1  # F-9R（2026-10-07 二轮）：库体量下限不设领域无关硬条数（AC 无条数义务），≥1 条即放行
+        require_keys_all: ["ref_no", "authors", "title", "journal", "year", "doi",
+                           "grade", "verify_checks", "two_source_verified", "local_pdf"]
+        token_source:                 # 库字段清单出自建库任务 AC（search-verify-refs）；local_pdf 出自 fulltext-inventory AC
+          require_keys_all:
+            ref_no: "ac:task-search-verify-refs"
+            authors: "ac:task-search-verify-refs"
+            title: "ac:task-search-verify-refs"
+            journal: "ac:task-search-verify-refs"
+            year: "ac:task-search-verify-refs"
+            doi: "ac:task-search-verify-refs"
+            grade: "ac:task-search-verify-refs"
+            verify_checks: "ac:task-search-verify-refs"
+            two_source_verified: "references/30-literature-pipeline.md:12"
+            local_pdf: "ac:task-lit-fulltext-inventory"
+  - task: task-presubmit-review      # AC「问题分级 CRITICAL/MAJOR/MINOR 且定位到原文」
+    files:
+      - path: 50-review/50-review-report.md
+        contains: ["CRITICAL", "MAJOR", "MINOR"]
+        min_matches: { pattern: "CRITICAL|MAJOR|MINOR", min: 1 }    # F6: 干净稿可为零条，在册即可
+        token_source:                 # AC「问题分级 CRITICAL/MAJOR/MINOR 且定位到原文」
+          contains:
+            CRITICAL: "ac"
+            MAJOR: "ac"
+            MINOR: "ac"
+  - task: task-finalize-manuscript   # AC「在 51-response-to-review.md 逐条给处置与依据」
+    files:
+      - path: 50-review/51-response-to-review.md
+        contains: ["CRITICAL", "MAJOR"]
+        token_source:                 # AC「落实评审报告中全部 CRITICAL/MAJOR 项」
+          contains:
+            CRITICAL: "ac"
+            MAJOR: "ac"
+  - task: task-latex-build           # AC「文件头标注 GENERATED」「refs.bib 与 37 编号一一对应」
+    files:
+      - path: 60-latex/manuscript/manuscript.tex
+        contains: ["GENERATED"]
+        token_source:                 # AC「文件头标注 GENERATED 且不得手工改写内容」
+          contains:
+            GENERATED: "ac"
+      - path: 60-latex/manuscript/refs.bib
+        # F-9R（2026-10-07 二轮）：原 min 20 对「refs.bib <20 条」判死——改「≥1 条 或 显式声明条数」。
+        min_matches: { pattern: "@[a-z]+\\{|refs\\.bib\\s*共\\s*\\d+\\s*条|无参考文献|零条目", min: 1 }
+  - task: task-back-matter           # 基类 AC「CRediT 逐人映射 / Conflict of Interest / Data Availability Statement」
+    files:
+      - path: 30-manuscript/39-back-matter.md
+        contains: ["CRediT", "Data Availability", "Conflict of Interest"]
+        token_source:                 # 基类 AC「Conflict of Interest、Data Availability Statement、CRediT 作者贡献逐人映射」
+          contains:
+            CRediT: "ac"
+            Data Availability: "ac"
+            Conflict of Interest: "ac"
+
+  # ── CS/ML 特有 5 条 ─────────────────────────────────────────────────────────────
+  # 同源守卫口径（2026-09-27 spec 审查 MINOR-2 纠注释）：78 号守卫 3 比的是**四档实质断言任务
+  # id 的交集**（实测 15 个）。本档与材料档同 id 的 task-skeleton-contract 因 clinical 改名
+  # task-outline-contract 而**掉出交集**，故同样不受同源约束——改它不会打断守卫；反之，落在
+  # 交集内的 15 个 id（含 task-select-journal、task-write-results-discussion）单档改断言即破守卫。
+  #
+  # 形体下限的设计口径（2026-09-27 spec 审查四轮返工后的实测边界）：`contains` 只证明词元在场，
+  # "token 挤一行 + 无意义编号行"的填充产物第一轮实测 rc=0（上一轮外部样本标签 M1/M3/M4/B6 未在本仓
+  # 留存；本轮同类形态实测仍 rc=0 的是 M-03/M-04/M-08b/M-10），故表类断言再加数字计数与单元格
+  # 分隔符计数两道下限（09 是例外，它无 AC 可辩护的数字下限，见该任务行注释）。**这两道只拦得住"格内零数字的裸填充"**：对抗实测 12 例
+  # 填充中 M-01（词元挤一行 + 纯编号行，digits=15 / pipes=12）被 `\d` 与 `\|` 两道同时咬死，
+  # M-02（表头齐、格内全空，digits=12 / pipes=108）只被 `\d` 咬（外框分隔符已够，`\|` 那档放行）；
+  # 而把格内换成无意义数字串（digits=371）、整列复制同一数值、同一条图号复制四行、620 词凑数
+  # 即翻转为 rc=0（共 10 例，见档头约束 4）。因此下限定位是"形状材料总量校验"，不是填充判据；
+  # 数值是否逐行独立、是否成对出现，全部由 AC 文本判 + 人工审查判（scripts/70-verify.py:323：
+  # min_matches 数的是 findall 出现次数，不认列、不认行、不认唯一性）。
+  # 阈值的出处纪律（第三轮 MAJOR-1 的教训）：每道下限的数字**必须由该任务 AC 明文写出的条数与
+  # 列数推出**，AC 没写的条数一律不得当成判据——上一版拿自己假设的"10 条 baseline"当真源，
+  # 实测把 5 条基线的合规核对表判死（`7 matches of '^\|' < min 10`：7 = 5 表体 + 表头 + 分隔行）。
+  # 本轮因此把条数写进 AC（baseline ≥5 条 / 消融行 ≥3 行含基准行 / 主结果 ≥3 指标行 × ≥3 比较列）。
+  # **对称要求（第四轮 MAJOR-1/2/3 的教训）**：推导出的最小值就是下限的上界，不得在其上再加"保险
+  # 余量"——13 表注释自推 18 却设 20，按 AC 字面手写的合规最小表（每格 `8 ± 1`）实测 digits=18 即被杀；
+  # 09 的数字下限任何 AC 可辩护值（≤12）都被 `^\|\s*\d+` min 6 隐含、更高就误杀"全部未满足"的诚实登记，
+  # 32 的篇幅下限被 AC1 自己的"骨架为准"逃生条款作废。本轮三处的处置：13 回落**取推导值** 18；09 **删除该道**
+  # （无可辩护值且分不开空壳与诚实登记）；32 先给 AC2 补上"不少于 5 条"的条数出处、再回落到推导值 10，
+  # 篇幅只留无条件成立的上界 3500。
+  # **推导的第三种隐含前提：书写记法与装饰（第五轮 MAJOR-1 / MINOR-1 / MINOR-3 / MINOR-4 的教训）**
+  # 条数与列数之外，`\d`、`^\|\s*\d+` 这类计数还隐含"该形态用阿拉伯数字书写且不加装饰"。前三轮只对齐了
+  # 条数/列数，本轮把四类记法义务逐个写进 AC：09 行号只写数字本体（`**1**` 装饰实测 anchored_num=0）；
+  # 11 与 32 的出处须含阿拉伯数字写法；14 的 mean/std 不得省略整数位；13 的九格 mean±std 义务无条件
+  # （整格缺失走 11 的 G 编号，不得在格内写"未测"）。同时按第四轮的对称要求核对余量：13 与 14 的下限
+  # 在"列名/指标名写中文"的最薄合规写法下**余量为 0**（实测 18 与 15 恰等下限），已把上一版写成
+  # "实测最小 18/18"的两处注释改为最紧值。
+  # 表格形态的出处纪律（第三轮 MAJOR-2）：`^\|` 与 `\|` 计数隐含"每行以竖线起头与收尾"的外框
+  # 要求，GFM 允许省略首尾竖线，故该形态必须由 AC 明文规定（写了这句的是 11/13/14/09 **四张**表的 AC），
+  # 否则就是拿正则偏好当判据（实测 T2#12：省略外框的 09 表 anchored 命中 0 被杀）。
+  # 同理，`^\|` 与 `\|` 的推导值把"表头行 + GFM 分隔行"各算作 1 个以竖线起头的行、并把两行各自的
+  # 分隔符计入总数（11 的 7＝5 表体＋表头＋分隔、56＝7×8；14 的 5 与 30 同此），故 AC 的「成表」
+  # 按 **GFM 有效表**理解——删掉 `| --- | --- |` 分隔行即不成立（实测 11：anchored=6/pipes=48 rc=1；
+  # 14：anchored=4/pipes=24 rc=1），此前提第五轮 MINOR-6 起在此点名，不再留在推导里当隐含假设。
+  # anchored 计数的列契约约束：AC 未声明行号列的两张表（11-analysis 七列、14-table 五列）只准用
+  # `^\|`（要求"成表的行"），不得用 `^\|\s*\d+`——后者实测会把方法名/配置名开头的合规行整表判死
+  # （R-01/R-03：anchored_num=0）；只有 AC 明列行号的 09 表才用 `^\|\s*\d+`。
+  # 同一失效面的另一半（第五轮 MAJOR-1）：`^\|\s*\d+` 要求数字紧跟行首竖线，行号单元格加粗/加括号/
+  # 加行内码（`**1**`、`(1)`、`` `1` ``）即命中 0——三种写法在补明文前都属 AC 合规产物却整表判死，
+  # 故 09 AC1 已把"行号列只写阿拉伯数字本体、不得装饰"写成明文，装饰写法现由 AC 判不合规。
+  - task: task-skeleton-contract     # AC「02-skeleton 逐节论点/预算」「01-meta 字段与 skeleton 一致」
+    files:
+      - path: 00-admin/02-skeleton.md
+        contains: ["Introduction", "Experimental", "Results", "Conclusion", "预算"]
+        token_source:                 # 英文词项 = 英文分节名枚举；预算出自 AC「行数预算」
+          contains:
+            Introduction: "sections"
+            Experimental: "sections"
+            Results: "sections"
+            Conclusion: "sections"
+            预算: "ac"
+    json_files:
+      - path: 00-admin/01-meta.json
+        min_items: 5
+        token_source:                 # AC「01-meta.json 的字段（标题、目标刊、引用制、行数预算、图表数）」——英文字段名为 AC 中文枚举的转写，term 声明源侧词
+          require_keys:
+            title: {src: "ac", term: 标题}
+            target_journal: {src: "ac", term: 目标刊}
+            citation: {src: "ac", term: 引用制}
+            word_budget: {src: "ac", term: 行数预算}
+            figures: {src: "ac", term: 图表数}
+            tables: {src: "ac", term: 图表数}
+        require_keys: ["title", "target_journal", "citation", "word_budget", "figures", "tables"]   # AC2（task-skeleton-contract 第 2 条）明列 5 个字段：标题、目标刊、引用制、行数预算、图表数——其中"图表数"落成 figures + tables 两键，故键要求 6 个；min_items 5 = AC2 那 5 个字段的数量下限（顶层为 dict 时 min_items 检的是**键数**，scripts/70-verify.py:390；顶层为列表时检条目数）；require_keys **分形态**：`01-meta.json` 顶层是 dict，走 scripts/70-verify.py:394-399 检"该 dict 自身是否含此键"（缺任一键即 FAIL，失败原文形如 `dict missing key 'tables'`）；list 顶层才走 :424-427 检第 1 个元素（第五轮 MINOR-5 纠正上一版只述 list 语义的注释）
+  - task: task-analyze-baselines     # AC「baseline 七列表头逐行核对（表号+页码）」「逐种子值与 mean ± std」
+    files:
+      - path: 10-data/11-analysis.md
+        contains: ["原文", "页码", "复现", "种子"]
+        token_source:                 # AC「他方原文报告值、原文表号与页码、本稿复现值」+「逐种子值」
+          contains:
+            原文: "ac"
+            页码: "ac"
+            复现: "ac"
+            种子: "ac"
+        min_matches: { pattern: "^\\|", min: 7 }             # AC1「不少于 5 条 baseline、每行以竖线起头收尾」：5 表体 + 表头 + 分隔行 = 7 个以竖线起头的行；AC 未声明行号列，故只锚"行首有竖线"
+      - path: 10-data/11-analysis.md
+        min_matches: { pattern: "\\d", min: 30 }             # AC1 的 5 行 × 每行 ≥6 位（原文值/复现值/std/表号页码）；第五轮 MINOR-1 给 AC1 补了「表号与页码须含阿拉伯数字写法」的明文，此前该推导隐含记法假设。补明文后仍不构成误杀：按 AC1+AC2 全合规的最薄 5 行表（出处写 `Table A1, p. xii` 附录记法 + 表外写逐种子值）实测 **digits=142 rc=0**，同表出处换算成阿拉伯写法 digits=147 rc=0 ⇒ 本道下限由 AC2 的逐种子值义务兜住，离 30 有巨大余量（上一轮独立取证给的"digits=20 被杀"样本漏写逐种子值，不属 AC 合规产物，已驳回）
+      - path: 10-data/11-analysis.md
+        min_matches: { pattern: "\\|", min: 50 }             # AC1 的 5 行 × 每行 8 个分隔（七列 + 外框）＝40，加表头与分隔行 16 ⇒ 56，取 50 留余量；推导含"表头 + GFM 分隔行"两行的贡献（删分隔行即 anchored=6/pipes=48 被杀，实测 `VE_11_nosep` rc=1——GFM 下无分隔行不成表，判据可辩护，前提已写进下方「表格形态的出处纪律」）
+      - path: 10-data/13-table-main-results.md
+        contains: ["均值", "标准差"]
+        token_source:                 # AC「列名与口径逐字写中文 均值 / 标准差」
+          contains:
+            均值: "ac"
+            标准差: "ac"
+        min_matches: { pattern: "\\d", min: 18 }             # AC3「≥3 指标行 × ≥3 比较列」＝9 格，取最弱读法每格 mean 与 std 各 1 位 ⇒ 2 位/格，9×2＝**18**（本轮由 20 回落：20 会把按此读法手写的合规最小表判死，实测 digits=18）；若按 AC3 括注「两位小数」强读法则 ≥36，本档取下界以免误杀，两位小数口径由 AC 文本 + 人工审查判。**余量为 0**：列名与指标名全写中文（AC3 只要求"列名与口径逐字写中文 均值 / 标准差"，未要求含数字）时九格最薄表实测恰 digits=18 rc=0，任一格改写即跌破 ⇒ 第五轮 MINOR-4 已在 AC3 补明文"九格义务无条件，整格无数据须走 11 的 G 编号缺口、不得在格内写未测/不主张"，故"八格最薄 + 一格未测"（实测 digits=16 rc=1）现为 AC 不合规而非误杀
+      - path: 10-data/13-table-main-results.md
+        min_matches: { pattern: "\\|", min: 18 }             # AC3 的 3 指标行 + 表头 + 分隔 = 5 行 × 每行 5 个分隔（3 比较列 + 指标列 = 4 列，加外框）＝推导值 **25**，实测合规最小表 pipes=25；声明下限取 25 之下、仍能拦住"每行不足 4 列"的裸填充。上一版注释写"每行 4 个分隔（3 列 + 外框）＝20"是算错（把 AC3 的"3 个比较列"当成全表列数，漏了指标列）
+      - path: 40-figures/40-figure-specs.md
+        contains: ["误差棒", "坐标轴", "缺失"]
+        token_source:                 # AC「坐标轴与单位、误差棒口径、缺失数据不补点的标注方式」
+          contains:
+            误差棒: "ac"
+            坐标轴: "ac"
+            缺失: "ac"
+        min_matches: { pattern: "Fig\\. ?\\d+", min: 4 }    # AC「不少于四条图规格」：findall 只数出现次数，重复同一图号凑数不可检（档头约束 4）
+  - task: task-declare-reproducibility # AC「六要素表头列（行号/要素/状态/取值与来源/正文定位）逐行登记」+「待确认项收口行恒在」
+    files:
+      - path: 00-admin/09-reproducibility.md
+        contains: ["代码", "随机种子", "超参数", "许可", "状态", "定位", "待确认项"]
+        token_source:                 # AC 六要素（代码/环境/超参数/随机种子/许可/指标实现出处）+「状态取…」+「正文定位」+「待确认项收口行」
+          contains:
+            代码: "ac"
+            随机种子: "ac"
+            超参数: "ac"
+            许可: "ac"
+            状态: "ac"
+            定位: "ac"
+            待确认项: "ac"
+        forbid_regex: ["部分满足", "基本满足", "大致满足"]        # AC1 规定状态只能取三态之一；值域外的中间措辞是"把缺项糊过去"的常态写法
+        min_matches: { pattern: "^\\|\\s*\\d+", min: 6 }    # AC1 明列「行号 1..6」「外框形态」与「行号列逐格只写阿拉伯数字本体，不得加粗/加括号/加行内码」（第五轮 MAJOR-1 补明文）：六要素各行以竖线起头且紧跟行号（下限=要素数，不缺任何一行）。补明文前该道会把 `**1**`/`(1)`/`` `1` `` 三种同样合规的写法判死（实测 anchored_num=0、rc=1，而 pipes=48/anchored=8 与裸数字版逐项相同），属把正则偏好当判据；现由 AC 承担该形态义务。
+      # 本任务**不设 `\d` 下限**（第四轮 MAJOR-1 删除上一版的 min 24）：AC1 的定位列有两个同等合法的分支
+      # （`节 + 页` 每行 2 位，或只写一个表图号 每行 1 位，第八轮按第七轮 spec 审查 MAJOR-1 写进 AC 明文）
+      # ⇒ 六行诚实登记的可辩护下沿 = 6 个行号 + 6 × 1 = **12**。上面那道 `^\|\s*\d+` min 6 只保证「6 行各
+      # 含 1 个数字」（⇒ ≥6 位），其余位数全指望 AC1 的分支，不能说 12 或 18「被那道隐含」。
+      # 三档实测（全部直读工作树、六条「待确认项」收口项齐全、取值列零数字）：**12**
+      # （`m7r7_vv2.py:TAB_full`，定位列全写 `表 3`，rc=0）、**18**（`m7r7_vv2.py:PP_full`，定位列
+      # `3 节 5 页`，rc=0；同构造的 `fa_min:MIN_09_ZEROPREP` 亦 18，但该例只列 1 条收口项、非 AC2 完整形态，
+      # 且 `fa_min.py:11` 读的是档位快照副本）、**24**（`q3_run:MY_09_PENDING`）。
+      # 区间口径：≤12 才是摆设，**≥13 即误杀**——对 12 位的合规登记注入一道 `\d` min 13 复跑 **rc=1**，
+      # 失败原文 `12 matches of '\d' < min 13`（`m7r7_vv2:TAB_floor13`）；上一版称为"可辩护下限"的 18 同样
+      # 误杀该登记（`:TAB_floor18` rc=1，原文 `12 matches of '\d' < min 18`）；对 18 位登记取 min 30 亦
+      # rc=1（`fa_min` 注入实验，原文 `18 matches of '\d' < min 30`，`注入生效条目数=1`）。
+      # 谎称已满足的空壳（外观同样合规、状态列全写"已满足"）落在同一区间浮动：22（`q5_verify.py:VG_m05`，
+      # 一位页码）、23（`sr_csml_mut:M-05`）、27（`sr_csml_mut:M-05b`）、28（`q5_verify.py:VG_m05b`，页码多
+      # 一位），整列复制的 66 见 `sr_csml_mut:M-06` ⇒ 无论下限取哪个值都只杀合规登记这一侧，与空壳分不开
+      # （档头约束 4）。第五轮 MAJOR-1 只补了行号书写形态的 AC 明文；第六轮 code 审查把注释数字换成可复现值
+      # 并给空壳侧四个数标出脚本与用例名；第七轮 spec 审查证伪了"定位列每行 2 位 ⇒ 下沿 18"（表图号分支下沿
+      # 是 12，实测 rc=0），第八轮据此把两个分支写进 AC1 并撤回那道可辩护下限的 18 口径。
+      - path: 00-admin/09-reproducibility.md
+        min_matches: { pattern: "\\|", min: 30 }            # AC1 的 6 表体 + 表头 + 分隔 = 8 行 × 每行 6 个分隔（五列 + 外框）＝推导值 **48**（上一版"≥5 个分隔…＝40"漏算了首尾外框各一个），实测合规最小表 pipes=48；声明下限取 30（低于推导值 ⇒ 不误杀），真实拦截面是"把词元竖排成单列/行列数不足"的裸表，不是空壳判据
+  - task: task-write-implementation  # AC「实现节含 Datasets/Baselines/Implementation/Metrics」
+    files:
+      - path: 30-manuscript/sections/32-implementation.md
+        contains: ["Datasets", "Baselines", "Implementation", "Metrics"]
+        token_source:                 # AC「含 Datasets / Baselines / Implementation / Metrics 四个子节」
+          contains:
+            Datasets: "ac"
+            Baselines: "ac"
+            Implementation: "ac"
+            Metrics: "ac"
+        word_count: [1, 233]                               # AC1 原文「正文篇幅 40–233 行（`02-skeleton.md` 给本节更小预算时以骨架为准）」（R5 由 600–3500 词按每句一行折算；旧 600–3500 词见史）——**带逃生条款**，只保留无条件成立的上界 233 行，删掉下界 40 行：行数原语没有条件语义，骨架给 <40 行预算时按 AC 写的合规短节会被判死（旧词口径下实测 295 词、482 词合规短节即先例）；"本节不为空"已由通配档 min_bytes 200 兜住。凑行数不可检（档头约束 4）
+        min_matches: { pattern: "\\d", min: 10 }            # AC2「每条 baseline 与 11-analysis 同集合、不少于 5 条，各给表号 + 页码」⇒ 5 × 每处出处 ≥2 个数字位＝**10**；第五轮 MINOR-1 给 AC2 补了「出处须含阿拉伯数字写法」的明文（此前该推导隐含记法假设）。上一轮独立取证称"出处写中文数字 ⇒ digits=7 被杀"，我复测其构造（五条 baseline、单位数报告值 + `Table A, p. xii`）实得 **digits=11 rc=0**——方法名自带数字（ResNet-50/ViT-B/16/EfficientNet-B3），报告把这部分算成 0，该"误杀"不成立；照录两位小数报告值的合规短节 digits=31。本道的真实拦截面是"整节零出处数字"：四子节名挤一行 + 纯凑词正文（全文零数字，实测 digits=0）rc=1
+  - task: task-tabulate-ablations    # AC「消融表五列表头逐行给 配置/指标/mean ± std（均值 ± 标准差）/方向/claim」+「图规格含误差棒与连续图号」
+    files:
+      - path: 10-data/14-table-ablations.md
+        contains: ["消融", "标准差", "claim"]
+        token_source:                 # AC「不少于 3 个消融行」「均值 ± 标准差」「该行支撑的 claim 编号（列名逐字用小写 claim）」
+          contains:
+            消融: "ac"
+            标准差: "ac"
+            claim: "ac"
+        min_matches: { pattern: "^\\|", min: 5 }             # AC1「不少于 3 个消融行（含完整模型基准行）+ 每行以竖线起头收尾」：3 表体 + 表头 + 分隔 = 5；AC 五列里没有行号列，故只锚行首竖线
+      - path: 10-data/14-table-ablations.md
+        min_matches: { pattern: "\\d", min: 15 }             # AC1 的 3 表体行 × 每行 ≥5 个数字位（mean 与 std 的数字位 + 指标名里的编号或 claim 号）＝推导值 15。**余量为 0**：最薄合规写法是指标列写中文（"准确率"，AC1 未要求指标名含数字）⇒ 每行 `3.4 ± 0.1` + `C-1` = 5 位、3 行 **digits=15 恰等下限 rc=0**（第五轮 MINOR-3 实测；上一轮注释写"实测最小 18"用的是 `Top-1` 指标名写法，非最紧最小值）。若按 AC1 的 mean/std 写法强读成"两位小数"则每行 ≥21 位，本档取最弱读法的下界，不把余量当判据。`0.4 ± 0.1` 省略整数位写成 `.4 ± .1`（每行 3 位，digits=12）现由 AC1 明文判不合规（实测 rc=1）
+      - path: 10-data/14-table-ablations.md
+        min_matches: { pattern: "\\|", min: 25 }             # AC1 的 3 表体 + 表头 + 分隔 = 5 行 × 每行 6 个分隔（五列 + 外框）＝30，取 25
+      - path: 40-figures/40-figure-specs.md
+        contains: ["误差棒", "消融"]
+        token_source:                 # AC「误差棒口径（std 或置信区间）与缺失运行的处理方式」「消融曲线/柱状图条目」
+          contains:
+            误差棒: "ac"
+            消融: "ac"
+        contains_regex: ["Fig\\.\\s*\\d+"]
+        min_matches: { pattern: "Fig\\. ?\\d+", min: 4 }    # AC「不少于四条图规格（含本任务的消融图）」：计数不认唯一性，同图号重复不可检（档头约束 4）
+
+# 规范依赖图（P0–P6 顺序铁律：数据 → 需求单 → 文献 → 撰写 → 合稿 → 评审）。
+# CS/ML 特有边：复现声明前置于实现节写作（缺六要素则方法节无法定稿）；
+# 消融表前置于主结果写作与数据图重绘（贡献主张的支撑来自消融行）。
+depends:
+  task-extract-figures: []
+  task-audit-data: []
+  task-analyze-baselines: [task-audit-data]
+  task-declare-reproducibility: [task-audit-data]
+  task-claim-map: [task-analyze-baselines]
+  task-tabulate-ablations: [task-analyze-baselines, task-skeleton-contract]
+  task-skeleton-contract: [task-claim-map, task-select-journal]
+  task-screen-existing-refs: []
+  task-search-verify-refs: [task-screen-existing-refs, task-claim-map]
+  task-lit-fulltext-inventory: [task-search-verify-refs]
+  task-select-journal: [task-analyze-baselines, task-search-verify-refs]
+  task-write-implementation: [task-skeleton-contract, task-lit-fulltext-inventory, task-declare-reproducibility]
+  task-write-results-discussion: [task-write-implementation, task-tabulate-ablations]
+  task-write-introduction: [task-write-results-discussion]
+  task-write-conclusion-abstract: [task-write-introduction]
+  task-redraw-data-figures: [task-analyze-baselines, task-tabulate-ablations]
+  task-draw-schematics: [task-skeleton-contract]
+  task-compose-raster-figures: [task-extract-figures]
+  task-assemble-draft: [task-write-conclusion-abstract, task-redraw-data-figures, task-draw-schematics, task-compose-raster-figures]
+  task-citation-audit: [task-assemble-draft, task-lit-fulltext-inventory]
+  task-presubmit-review: [task-assemble-draft, task-citation-audit, task-declare-reproducibility]
+  task-finalize-manuscript: [task-presubmit-review]
+  task-latex-build: [task-finalize-manuscript]
+
+# ── 规范任务集（P1–P6；顺序铁律：框架 → 文献 → 撰写）────────────────────────────
+tasks:
+  # ── P1 数据基座 ────────────────────────────────────────────────────────────────
+  - id: task-extract-figures
+    module: mod-data
+    stage: P1
+    name: 提取既有图件并建清单
+    brief: 从原学位论文/技术报告/投稿草稿提取全部图件与表格截图，建可回溯清单。
+    ac:
+      - "`{fig}/extracted/manifest.md` 列出每张图的来源（文档页/图号/幻灯片号）、导出文件名与像素尺寸，覆盖原始文档中的全部图件。"
+      - "导出件存于 `{fig}/extracted/`，文件名与清单一一对应，不重命名、不改色、不裁切。"
+      - "`{data}/raw/` 下原始文档保持原样（只读），本任务不修改任何原始件；无既有图件者在清单写明“无来源图件，全部图件由本稿新生成”。"
+    read: [{path: "{data}/raw", priority: must_read, hint: 原始报告与图件源}]
+    edit: ["{fig}/extracted/manifest.md"]
+    hours: 2
+    difficulty: low
+    verify: "python {verify_tool} task-extract-figures"
+
+  - id: task-audit-data
+    module: mod-data
+    stage: P1
+    name: 核对实验日志与源表数值
+    brief: 将训练日志与评测输出逐值核对，登记口径、种子数、算力与缺口清单。
+    ac:
+      - "`{data}/10-audit.md` 含逐值核对表，覆盖全部日志与指标导出文件，标注每个数值对应的来源文件/运行 ID 及一致/不一致/缺失判定。"
+      - "所有不一致或缺失项单列缺口清单（G 编号），并注明是否影响主要结论及处置（保留并 hedging / 不使用）；**无缺口时须显式写「缺口：0 条」**，不得留空（F9：允许零缺口清洁数据合规）。"
+      - "明确每个指标的口径（哪个划分、哪个 checkpoint 选择规则、几种子、聚合方式）与单位；源数据无方差列时显式标注“原文未报告”。"
+      - "声明后续分析唯一数据源为 `{data}/`（含 `.provenance` 与运行清单），不引入项目外数据。"
+    inject: [unit_source, n_disclosure, raw_vs_processed]
+    ac_exception: true            # 4 条产物 AC + 3 条域口径注入（数据来源、种子与口径是 CS/ML 口径的三处硬约束）
+    read: [{path: "{data}", priority: must_read, hint: 训练日志与评测输出}, {path: "{data}/raw", priority: must_read, hint: 不可再生的原始件（只读）}]
+    edit: ["{data}/10-audit.md"]
+    hours: 3
+    difficulty: low
+    verify: "python {verify_tool} task-audit-data"
+
+  - id: task-analyze-baselines
+    module: mod-data
+    stage: P1
+    name: baseline 原文核对与多种子方差分析
+    brief: 出 baseline 原文报告值与本稿复现值的逐行核对表、多种子方差、主结果表与图表规格。
+    ac:
+      - "baseline 原文核对（page-level）：`{data}/11-analysis.md` 以上述七项为表头列（方法名、指标、他方原文报告值、原文表号与页码、本稿复现值、mean ± std、偏差判定），逐行给一个 baseline 且不少于 5 条，每列各占一格、每行以竖线起头与收尾；原文表号与页码须以阿拉伯数字出现在同格内（原文用附录字母表号或前置罗马页码时，在同格并列写出阿拉伯写法，如 `Table A1（附录表 1）, p. xii（第 12 页）`），不得整列只给非阿拉伯记法；与原文不一致者按 G 编号登记缺口，不得改写原文数值以对齐自家结果。"
+      - "`{data}/11-analysis.md` 给出每个指标的多种子聚合口径（均值/中位数、样本标准差）与逐种子值（阿拉伯数字，不得写“若干次运行”），且口径与 `{data}/10-audit.md` 一致。"
+      - "`{data}/13-table-main-results.md` 主结果表不少于 3 个指标行 × 3 个比较列（本方法 + ≥2 条 baseline），每格给 mean ± std 并可回指日志；本表是中文工作文档，列名与口径逐字写中文 均值 / 标准差（两位小数），每行以竖线起头与收尾；只报最优一次运行的单元格判为不合格；本表九格的 mean ± std 义务是无条件的——某格确实无数据时不得在格内写「未测/不主张」了事（那处标注义务约束的是结论层，见本任务 AC 末条），须在 `{data}/11-analysis.md` 按 G 编号登记缺口并使该主张不上主表。"
+      - "`{fig}/40-figure-specs.md` 逐图给类型（曲线/柱状/散点）、坐标轴与单位、误差棒口径、缺失数据不补点的标注方式与图注必写项；条目不少于四条（主比较图、训练曲线、消融图、尺度或效率图），每条以 Fig. <数字> 起头。"
+      - "结论不得超出 `{admin}/00-plan.md` 的边界；越界项显式标注为“未测/不主张”。"
+    inject: [baseline_provenance, seed_variance, missing_data, forbidden_claims]
+    ac_exception: true            # 5 条产物 AC + 4 条域口径注入（原文核对与方差披露必须与缺口、禁用断言同时约束）
+    read: [{path: "{data}/10-audit.md", priority: must_read, hint: 口径与缺口清单}, {path: "{admin}/00-plan.md", priority: must_read, hint: 证据路线与边界}]
+    edit: ["{data}/11-analysis.md", "{data}/13-table-main-results.md", "{fig}/40-figure-specs.md"]
+    hours: 6
+    difficulty: high
+    verify: "python {verify_tool} task-analyze-baselines"
+
+  - id: task-declare-reproducibility
+    module: mod-data
+    stage: P1
+    name: 复现声明登记（代码/超参/随机种子）
+    brief: 逐行核对可复现六要素并以固定收口行声明有无待确认项。
+    ac:
+      - "`{admin}/09-reproducibility.md` 以编号表格逐行登记六要素，表头列为 行号、要素、状态、取值与来源、正文定位，每行以竖线起头与收尾；正文定位有两个同等合法的分支——写 `节 + 页`（两个阿拉伯数字，如 `3 节 5 页`），或只写一个表图号（一个阿拉伯数字，如 `表 3`），二者都算合规，故六行登记的定位列数字位在 6~12 之间浮动，不得按位数判死任何一种写法；行号列逐格只写阿拉伯数字本体（`1`…`6`），不得加粗、加括号或加行内码装饰；六要素即 行号 1 代码来源与 commit、行号 2 运行环境与框架版本、行号 3 超参数搜索空间与选定值、行号 4 随机种子清单、行号 5 数据划分与版本及许可、行号 6 指标实现出处；状态取 已满足（附取值与来源文件）/ 未满足 / 不适用（写明理由）三态之一。"
+      - "本文件末尾必须有「待确认项：」收口行：有缺失者逐条列出（格式 待确认项：<项目>：需谁提供什么），六要素均为 已满足 或 不适用 时写「待确认项：无」——该行不得整句省略，缺项以「不写这行」的形式消失即判不合格。"
+      - "随机种子清单必须给出实际使用的种子值与每个种子对应的运行 ID（阿拉伯数字）；只写“固定随机种子”而不给数值者判未满足。"
+      - "超参数条目须区分事前设定与搜索所得，并给搜索试验次数；无法核证者判为未满足，不得凭记忆填写。"
+      - "六要素的同一口径须出现在 `{ms}/sections/32-implementation.md` 与 `{ms}/39-back-matter.md` 的对应位置，不得静默省略、不得只写 N/A。"
+    inject: [reproducibility_statement, reporting_standard, domain_checklist]
+    ac_exception: true          # 5 条产物 AC + 3 条域口径：六要素须逐要素成行（合并即让缺项静默消失）；domain_checklist 给许可口径出处，算力口径由 baseline_required 与实现节 AC 承载，不入本任务 files 断言
+    read: [{path: "{data}/raw", priority: must_read, hint: 配置文件、脚本与运行日志}, {path: "{data}/10-audit.md", priority: must_read, hint: 已核对的运行与口径}]
+    edit: ["{admin}/09-reproducibility.md"]
+    hours: 2.5
+    difficulty: medium
+    verify: "python {verify_tool} task-declare-reproducibility"
+
+  # ── P2 claim 框架与契约 ─────────────────────────────────────────────────────────
+  - id: task-claim-map
+    module: mod-lit
+    stage: P2
+    name: 建 claim 需求单
+    brief: 把论证环展开成 claim 行，形成对文献的需求单（检索的输入）。
+    ac:
+      - "`{lit}/20-claims-map.md` 每行含 claim_id、断言句（与正文逐字一致）、role、needs、refs、evidence_strength、boundary、section 字段。"
+      - "`needs` 非空行即检索需求；每条需求写明需要的证据类型与目标等级（A/B）；**claim 数为 0 时须显式写「claim 数：0」**（F9：小课题合规）。"
+      - "因果与机制类 claim 的 boundary 必填（写明本稿实验设计能否支撑该归因），且 unsupported 行不得进入骨架。"
+      - "性能类 claim 行须写明对照 baseline 与比较口径；`{lit}/20-claims-map.md` 为下游 `task-skeleton-contract` 提供逐节论点来源（骨架侧负责与 `{admin}/02-skeleton.md` 的反向核对，本任务先于骨架执行，不要求该文件已存在）。"
+    inject: [hedging_required, baseline_required]
+    read: [{path: "{data}/11-analysis.md", priority: must_read, hint: 论点与证据链来源}]
+    edit: ["{lit}/20-claims-map.md"]
+    hours: 3
+    difficulty: medium
+    verify: "python {verify_tool} task-claim-map"
+
+  - id: task-skeleton-contract
+    module: mod-draft
+    stage: P2
+    name: 骨架契约与元数据
+    brief: 产出逐节骨架与 meta 契约，作为后续全部任务 AC 的真源。
+    ac:
+      - "`{admin}/02-skeleton.md` 逐节给出论点、证据、边界、行数预算、图表清单与引用制，节名按 Introduction / Method / Experimental / Results / Conclusion 组织，且 Experimental 含数据集、实现、主结果、消融四个子节。"
+      - "`{admin}/01-meta.json` 的字段（标题、目标刊、引用制、行数预算、图表数）与 skeleton 一致。"
+      - "骨架不得含未在 `{lit}/20-claims-map.md` 登记的机制性或归因 claim。"
+      - "每个主张为贡献的模块在骨架中标明其对应的消融行号，无消融支撑的贡献不得写入骨架。"
+    inject: [ablation_required]
+    read: [{path: "{admin}/00-plan.md", priority: must_read, hint: 目标刊与路线}, {path: "{admin}/03-journal-selection.md", priority: must_read, hint: 选刊结论与结构要求}, {path: "{data}/11-analysis.md", priority: must_read, hint: 论点与证据}, {path: "{lit}/20-claims-map.md", priority: must_read, hint: 需求单}]
+    edit: ["{admin}/02-skeleton.md", "{admin}/01-meta.json"]
+    hours: 2.5
+    difficulty: medium
+    verify: "python {verify_tool} task-skeleton-contract"
+
+  - id: task-tabulate-ablations
+    module: mod-data
+    stage: P4
+    name: 消融表与消融曲线规格
+    brief: 逐行出消融表（配置/指标/mean ± std/支撑 claim）与消融图的误差棒规格。
+    ac:
+      - "`{data}/14-table-ablations.md` 以上述五项为表头列逐行给 配置、指标、mean ± std（均值 ± 标准差，阿拉伯数字到小数位，且个位为零时整数位仍照写 `0.4`——省略整数位的 `.4` 记法不合格）、相对完整模型的变化方向、该行支撑的 claim 编号（列名逐字用小写 claim），每列各占一格、每行以竖线起头与收尾；每个被主张为贡献的模块至少一行，且本表不少于 3 个消融行（含完整模型基准行）。"
+      - "消融行的分母必须写明种子数与数据集划分；种子数 <3 的行按 G 编号登记缺口，不得以单次运行充当均值。"
+      - "`{fig}/40-figure-specs.md` 的消融曲线/柱状图条目必须给误差棒口径（std 或置信区间）与缺失运行的处理方式；本任务负责的图与主比较图、训练曲线合计不少于四条图规格，每条以 Fig. <数字> 起头且逐条各占一行。"
+      - "未做消融的贡献在本文件显式列为缺口，不得只在正文降级措辞。"
+    inject: [ablation_required, seed_variance, missing_data]
+    ac_exception: true            # 4 条产物 AC + 3 条域口径注入（消融、方差与缺口必须同时约束，缺一即回归为选择性报告）
+    read: [{path: "{data}/11-analysis.md", priority: must_read, hint: 主结果与方差口径}, {path: "{admin}/02-skeleton.md", priority: must_read, hint: 贡献清单与消融对应}, {path: "{lit}/20-claims-map.md", priority: must_read, hint: claim 编号}]
+    edit: ["{data}/14-table-ablations.md", "{fig}/40-figure-specs.md"]
+    hours: 4
+    difficulty: high
+    verify: "python {verify_tool} task-tabulate-ablations"
+
+  # ── P2/P3 文献 ─────────────────────────────────────────────────────────────────
+  - id: task-screen-existing-refs
+    module: mod-lit
+    stage: P2
+    name: 旧文献分级筛选
+    brief: 对既有文献库分级筛选，留 A/B、剔无关，并单列 baseline 出处。
+    ac:
+      - "`{lit}/20-screening.md` 逐条给出 keep/drop 与理由，覆盖既有库全部条目；**既有库为空时须显式写「无既有条目」**（F9：少文献合规）。"
+      - "keep 项按 A（全文索取）/B（背景）分级，并标注拟用于哪一节。"
+      - "drop 项说明理由（主题不符/质量/重复/已被更新结果取代），不得静默删除。"
+      - "作为 baseline 数值出处的文献单独成组标注（论文 + 表号 + 页码），其取舍不得只给“相关”这类无理由判定。"
+    read: [{path: "{data}/raw", priority: reference, hint: 源文档参考文献表}, {path: "{admin}/00-plan.md", priority: reference, hint: 主题范围}]
+    edit: ["{lit}/20-screening.md"]
+    hours: 2
+    difficulty: low
+    verify: "python {verify_tool} task-screen-existing-refs"
+
+  - id: task-search-verify-refs
+    module: mod-lit
+    stage: P3
+    name: 按需求单定向检索并验真
+    brief: 按 claims_map 的待补行检索，验真后建库（含 DOI 与核验痕迹）。
+    ac:
+      - "`{lit}/21-candidates.json` 记录多源命中（openalex/crossref/semantic_scholar/arxiv）与标题相似度，`{lit}/22-refs.json` 只收通过验真者。"
+      - "每条入库记录的字段（ref_no、authors、title、journal、year、doi、grade、verify_checks）完整；未命中的标题一律判 unresolvable（反伪造偏置），不误判为伪造。"
+      - "检索以 `{lit}/20-claims-map.md` 的 needs 非空行为输入，禁止无目标广检；未匹配需求的候选留在 `{lit}/21-candidates.json` 不升级。"
+      - "预印本与会议版并存时须择一为主来源并在 verify_checks 写明择取理由；只有 arXiv 版本者标 grade 并说明未经同行评审。"
+      - "收口判据：所有 needs 非空行要么回填 refs，要么显式标 unsupported。"
+    read: [{path: "{lit}/20-claims-map.md", priority: must_read, hint: 检索需求单}, {path: "{lit}/20-screening.md", priority: must_read, hint: 待检索基数}]
+    edit: ["{lit}/21-candidates.json", "{lit}/22-refs.json"]
+    hours: 6
+    difficulty: high
+    verify: "python {verify_tool} task-search-verify-refs"
+
+  - id: task-lit-fulltext-inventory
+    module: mod-lit
+    stage: P3
+    name: 全文可得性归一
+    brief: 登记全文到位情况、匹配 ref_no，并给出待取清单。
+    ac:
+      - "`{lit}/22-refs.json` 的 local_pdf 字段与 `{lit}/fulltext/` 实际文件一一对应，匹配率与异常数写明。"
+      - "`{lit}/23-download-checklist.md` 列出待取清单（DOI、目标文件名、优先级、是否需机构订阅）。"
+      - "`{lit}/24-fulltext-inventory.md` 按可得性分层（机制承载 / 背景支撑 / 备选），并标明机制承载为 0 条时的结论。"
+      - "描述性命名的文件须走显式 pin 且 pin 自带校验（标题 token 与首页重合阈值），不靠猜。"
+    read: [{path: "{lit}/22-refs.json", priority: must_read, hint: 文献库}, {path: "{lit}/20-claims-map.md", priority: must_read, hint: 机制承载判定依据}, {path: "{lit}/fulltext/", priority: must_read, hint: 全文到位实况（22-refs.json 的 local_pdf 与之对应）}]
+    edit: ["{lit}/23-download-checklist.md", "{lit}/24-fulltext-inventory.md", "{lit}/22-refs.json"]
+    hours: 2.5
+    difficulty: low
+    verify: "python {verify_tool} task-lit-fulltext-inventory"
+
+  - id: task-select-journal
+    module: mod-lit
+    stage: P2
+    name: 选刊评估（人工闸门）
+    brief: 给出候选会/刊排序与适配分析，含复现与数据可得性要求。
+    ac:
+      - "`{admin}/03-journal-selection.md` 给出候选会/刊排序、影响因子/分区、投稿周期、版面与开放获取费用，并逐刊说明适配与风险。"
+      - "逐刊写明复现硬性要求（是否要求代码/权重可得、可复现性清单、数据集许可声明、页数与附录限制）与字数、图数、引用制。"
+      - "标注本项为人工闸门：结论须用户确认后才可据以定稿。"
+    read: [{path: "{data}/11-analysis.md", priority: must_read, hint: 稿件定位与证据强度}, {path: "{admin}/09-reproducibility.md", priority: reference, hint: 目标刊对复现声明的要求}, {path: "{admin}/00-plan.md", priority: must_read, hint: 作者偏好与约束}]
+    edit: ["{admin}/03-journal-selection.md"]
+    hours: 2.5
+    difficulty: medium
+    verify: "python {verify_tool} task-select-journal"
+
+  # ── P4 撰写 ────────────────────────────────────────────────────────────────────
+  - id: task-write-implementation
+    module: mod-draft
+    stage: P4
+    name: 写数据与实现节
+    brief: 写 Implementation/Experimental Setup 节：数据集、baseline、实现与指标口径。
+    ac:
+      - "`{ms}/sections/32-implementation.md` 含 Datasets / Baselines / Implementation / Metrics 四个子节，正文篇幅 40–233 行（`{admin}/02-skeleton.md` 给本节更小预算时以骨架为准），其参数与 `{data}/10-audit.md` 口径一致。"
+      - "每条 baseline（与 `{data}/11-analysis.md` 同集合，不少于 5 条）给出原文报告值与出处（表号 + 页码，出处须含阿拉伯数字写法，口径与 `{data}/11-analysis.md` 的「同格并列写阿拉伯」条款一致）及实现来源（官方代码/自实现），与 `{data}/11-analysis.md` 的核对表逐字一致。"
+      - "数据集给版本、许可、获取日期与划分口径；超参数与算力按 `{admin}/09-reproducibility.md` 的状态逐字落入本节，缺失项以「待确认」行原样呈现，不得改写为已完成、也不得删句。"
+      - "该节引用只使用 `{lit}/22-refs.json` 中已验真条目，且与 `{lit}/20-claims-map.md` 的 section 落点一致。"
+      - "不写未记录的参数（如搜索预算、硬件型号缺失时只写已知内容并标注待确认），不得臆造。"
+    inject: [reproducibility_statement, method_citation, n_disclosure]
+    ac_exception: true            # 5 条产物 AC + 3 条域口径注入（复现要素、方法引用与披露口径都要进这一节）
+    read: [{path: "{admin}/02-skeleton.md", priority: must_read, hint: 骨架与预算}, {path: "{admin}/09-reproducibility.md", priority: must_read, hint: 六要素状态}, {path: "{data}/10-audit.md", priority: must_read, hint: 口径与缺失}, {path: "{data}/11-analysis.md", priority: must_read, hint: baseline 核对表}, {path: "{lit}/20-claims-map.md", priority: must_read, hint: 该节 claim 与引用落点}, {path: "{lit}/22-refs.json", priority: must_read, hint: B08：该节引用只使用其已验真条目（比对对象）}]
+    edit: ["{ms}/sections/32-implementation.md"]
+    hours: 3.5
+    difficulty: high
+    verify: "python {verify_tool} task-write-implementation"
+
+  - id: task-write-results-discussion
+    module: mod-draft
+    stage: P4
+    name: 写结果与讨论
+    brief: 写 Experimental Results 与 Discussion，逐图逐表推进，性能措辞与方差口径绑定。
+    ac:
+      - "`{ms}/sections/33-results-discussion.md` 按骨架的图表顺序推进：先主结果，再消融，最后错误分析与局限。"
+      - "每条性能陈述与 `{data}/11-analysis.md` 的 mean ± std 与核对表逐字一致，且数值可回指日志；未做检验处不得写 significantly。"
+      - "机制/归因类断言只使用 `{lit}/20-claims-map.md` 对应 claim 行的 refs；证据强度不足者按 boundary 收窄措辞。"
+      - "消融未覆盖的贡献不得在本节声明为有效。"
+      - "与他方结果比较时必须同段写明协议差异（划分/指标实现/算力预算），不得并列不可比数值。"
+    inject: [statistical_wording, baseline_required, forbidden_claims, seed_variance]
+    ac_exception: true            # 5 条产物 AC + 4 条域口径注入（比较口径与方差披露是结果节的硬约束）
+    read: [{path: "{admin}/02-skeleton.md", priority: must_read, hint: 骨架}, {path: "{data}/11-analysis.md", priority: must_read, hint: 核对表与方差}, {path: "{data}/14-table-ablations.md", priority: must_read, hint: 消融行}, {path: "{data}/10-audit.md", priority: must_read, hint: 口径与缺口}, {path: "{lit}/20-claims-map.md", priority: must_read, hint: claim 与边界}, {path: "{data}/13-table-main-results.md", priority: must_read, hint: B08/B-5：主结果表（先主结果）}]
+    edit: ["{ms}/sections/33-results-discussion.md"]
+    hours: 6
+    difficulty: high
+    verify: "python {verify_tool} task-write-results-discussion"
+
+  - id: task-write-introduction
+    module: mod-draft
+    stage: P4
+    name: 写引言
+    brief: 写 Introduction，按共识→分歧→缺口→本文位置四步推进。
+    ac:
+      - "`{ms}/sections/31-introduction.md` 按共识→分歧→缺口→本文位置组织，缺口与本文定位明确。"
+      - "背景类引用只出现在本节，且仅使用已验真条目；段落不得只堆文献不给论断。"
+      - "本文贡献列表逐条可回指消融行或主结果，不得预告未在 §Results 出现的效果。"
+      - "行数符合 `{admin}/02-skeleton.md` 的预算，不因补引而超预算。"
+    inject: [hedging_required]
+    read: [{path: "{admin}/02-skeleton.md", priority: must_read, hint: 预算与结构}, {path: "{lit}/20-claims-map.md", priority: must_read, hint: 背景类 claim}, {path: "{lit}/22-refs.json", priority: must_read, hint: 可引条目}]
+    edit: ["{ms}/sections/31-introduction.md"]
+    hours: 3
+    difficulty: medium
+    verify: "python {verify_tool} task-write-introduction"
+
+  - id: task-write-conclusion-abstract
+    module: mod-draft
+    stage: P4
+    name: 写结论与摘要
+    brief: 写 Conclusion 与摘要，结论不得超出结果与消融覆盖范围。
+    ac:
+      - "`{ms}/sections/34-conclusion.md` 逐条回应引言提出的问题，不引入新数据、不超出 §Results 的支持范围。"
+      - "`{ms}/30-abstract.md` 在骨架给出的行数区间内，含目的/方法/主要结果（带关键数值与方差口径）/结论，无引用、无未定义缩写。"
+      - "摘要与结论中的每个数值与 §Results 一致；无消融支撑的贡献不得写进摘要。"
+    inject: [forbidden_claims, seed_variance]
+    read: [{path: "{ms}/sections/33-results-discussion.md", priority: must_read, hint: 结果范围}, {path: "{data}/14-table-ablations.md", priority: must_read, hint: 消融覆盖}, {path: "{admin}/02-skeleton.md", priority: must_read, hint: 行数预算}, {path: "{admin}/01-meta.json", priority: reference, hint: 题目与刊物口径}]
+    edit: ["{ms}/sections/34-conclusion.md", "{ms}/30-abstract.md"]
+    hours: 2
+    difficulty: medium
+    verify: "python {verify_tool} task-write-conclusion-abstract"
+
+  # ── P4 图件 ────────────────────────────────────────────────────────────────────
+  - id: task-redraw-data-figures
+    module: mod-fig
+    stage: P4
+    name: 绘制矢量数据图
+    brief: 按规格重绘主比较图与训练曲线为矢量件，误差棒与缺失按口径处理。
+    ac:
+      - "`{fig}/data/` 下各矢量图的坐标轴、单位、误差棒与 `{fig}/40-figure-specs.md` 一致；每个数据点对应 `{data}/11-analysis.md` 的聚合口径。"
+      - "绘图脚本随图版本化，读数可从日志复算；缺失运行不补点，图注写明缺口。"
+      - "同一指标在不同图中的数值一致（交叉核对）。"
+    inject: [missing_data, axis_integrity]
+    read: [{path: "{fig}/40-figure-specs.md", priority: must_read, hint: 规格真源}, {path: "{data}/11-analysis.md", priority: must_read, hint: 逐种子值与聚合}, {path: "{data}", priority: must_read, hint: 唯一数据源}]
+    edit: ["{fig}/data/fig-main-comparison.pdf", "{fig}/data/fig-training-curves.pdf", "{fig}/data/fig-scaling-behavior.pdf", "{tool_dir}/73-plot-results.py"]
+    hours: 4
+    difficulty: medium
+    verify: "python {verify_tool} task-redraw-data-figures"
+
+  - id: task-draw-schematics
+    module: mod-fig
+    stage: P4
+    name: 绘制方法与流程示意图
+    brief: 画模型结构与数据流程图，只画有依据的要素。
+    ac:
+      - "`{fig}/schematic/fig-method-overview.pdf` 与同名 png 同存，矢量优先。"
+      - "示意图中每个模块在正文有对应论断；未实现或未消融的路径标注为 proposed/not ablated。"
+      - "图中术语与正文一致（缩写、上下标写法、模块命名）。"
+    read: [{path: "{admin}/02-skeleton.md", priority: must_read, hint: 结构与叙事}, {path: "{data}/14-table-ablations.md", priority: must_read, hint: 消融覆盖的模块}, {path: "{fig}/40-figure-specs.md", priority: must_read, hint: 规格}]
+    edit: ["{fig}/schematic/fig-method-overview.pdf", "{fig}/schematic/fig-method-overview.png"]
+    hours: 3
+    difficulty: medium
+    verify: "python {verify_tool} task-draw-schematics"
+
+  - id: task-compose-raster-figures
+    module: mod-fig
+    stage: P4
+    name: 拼接定性图版
+    brief: 把生成样例/注意力图/失败案例拼成投稿图版，选样依据可核。
+    ac:
+      - "`{fig}/composite/` 下各图版的拼接几何（行列数、留白、缩放比例）与 `{fig}/40-figure-specs.md` 一致。"
+      - "每格标注样本 ID 与选择依据，不得静默挑好看样例；被排除样例写明排除理由。"
+      - "不做色彩美化（除必要的亮度统一并注明），不得改变原始输出的可比性。"
+    inject: [representative_selection, missing_data]
+    read: [{path: "{data}", priority: must_read, hint: 原始输出件}, {path: "{fig}/40-figure-specs.md", priority: must_read, hint: 版式规格}]
+    edit: ["{fig}/composite/fig-qualitative-grid.png", "{tool_dir}/74-compose-plates.py"]
+    hours: 3
+    difficulty: medium
+    verify: "python {verify_tool} task-compose-raster-figures"
+
+  # ── P5 合稿与审计 ──────────────────────────────────────────────────────────────
+  - id: task-assemble-draft
+    module: mod-draft
+    stage: P5
+    name: 合稿与参考文献
+    brief: 用确定性脚本合稿，出编号制文献表并做自检。
+    ac:
+      - "`{ms}/36-draft.md` 按骨架顺序合并摘要、各节正文、图注与表格，图注编号 Fig.1..N 唯一且连续。"
+      - "`{ms}/37-references.md` 只列正文实际引用的编号，升序无重号，每条含 authors/title/journal/year/DOI。"
+      - "正文零占位符：所有面向作者的待确认项上收为单一清单（含 `{admin}/09-reproducibility.md` 的待确认行），正文不得残留标记或面向作者的说明块。"
+      - "`{tool_dir}/72-assemble-draft.py` 幂等：同一输入字节一致；正文行数落在 `{admin}/01-meta.json` 的预算区间。"
+    read: [{path: "{admin}/02-skeleton.md", priority: must_read, hint: 顺序与预算}, {path: "{ms}/sections", priority: must_read, hint: 各节正文}, {path: "{lit}/22-refs.json", priority: must_read, hint: 文献表来源}, {path: "{admin}/09-reproducibility.md", priority: must_read, hint: 待确认项上收清单}, {path: "{admin}/01-meta.json", priority: must_read, hint: B08：正文行数预算区间（比对对象）}]
+    edit: ["{ms}/36-draft.md", "{ms}/37-references.md", "{tool_dir}/72-assemble-draft.py", "{verify_manifest}"]
+    hours: 2.5
+    difficulty: medium
+    verify: "python {verify_tool} task-assemble-draft"
+
+  - id: task-citation-audit
+    module: mod-lit
+    stage: P5
+    name: 引用覆盖审计
+    brief: 逐条核对已引文献与正文断言，给出判定与判据级别。
+    ac:
+      - "`{lit}/25-citation-audit.md` 逐条列出全部已引编号的位置、判定（支持/部分支持/不支持）与判据级别（全文页/题录级/未核）。"
+      - "无全文的条目必须显式标注为未核；若某条未核条目进入结果与讨论，须在此显式列出并说明其支撑与哪些已有引用重叠。"
+      - "不支持项按三选一处置（替换文献 / 降级措辞 / 删除断言），并在文件内留改动前后文本痕迹。"
+      - "未引文献三档判定（该引/留 future/剔除）覆盖库中全部未引条目。"
+      - "统计自引比例（作者姓氏在已引文献作者列表中重复出现者）；超过 20% 时逐条列出并说明理由，不得静默保留。"
+      - "作为 baseline 数值出处的引用必须给出该文献的表号与页码；正文引用他方数值而本稿未回到原文核对者，判定不得高于部分支持。"
+    inject: [baseline_provenance]
+    ac_exception: true            # 6 条产物 AC + 1 条原文核对口径（引用判定必须与 baseline 出处绑定）
+    read: [{path: "{ms}/36-draft.md", priority: must_read, hint: 正文断言}, {path: "{lit}/22-refs.json", priority: must_read, hint: 库与全文状态}, {path: "{lit}/20-claims-map.md", priority: must_read, hint: claim-证据对应}, {path: "{lit}/24-fulltext-inventory.md", priority: must_read, hint: 可得性分层}]
+    edit: ["{lit}/25-citation-audit.md", "{verify_manifest}"]
+    hours: 4
+    difficulty: high
+    verify: "python {verify_tool} task-citation-audit"
+
+  # ── P6 终局 ────────────────────────────────────────────────────────────────────
+  - id: task-presubmit-review
+    module: mod-final
+    stage: P6
+    name: 投稿前评审
+    brief: 六层评审整稿，出分级问题清单与明确投稿结论。
+    ac:
+      - "`{review}/50-review-report.md` 按六层（论证链/claim-证据/新颖性与文献复核/语言与 AI 腔/图表规范/实验完整性与对照与方差）逐层给结论。"
+      - "问题分级 CRITICAL/MAJOR/MINOR 且定位到原文（章节+句子或图表号），每条给出修法。"
+      - "核对正文数值与 `{data}/11-analysis.md`、`{data}/14-table-ablations.md` 的均值、标准差与分母一致，并核对复现六要素缺项已全部处置。"
+      - "给出目标刊适配风险与明确结论（可投 / 小修后投 / 需大改 / 不建议投）。"
+      - "代码来源、随机种子清单或数据划分版本缺项且未以待确认呈现时判为 CRITICAL（可复现性合规项，不因文字流畅降级）。"
+    inject: [forbidden_claims, reproducibility_statement]
+    ac_exception: true            # 5 条产物 AC + 2 条域口径注入（复现要素状态与禁用断言都是评审判 CRITICAL 的依据）
+    read: [{path: "{ms}/36-draft.md", priority: must_read, hint: 受审稿}, {path: "{admin}/09-reproducibility.md", priority: must_read, hint: 六要素状态与待确认项（判 CRITICAL 的比对对象）}, {path: "{data}/14-table-ablations.md", priority: must_read, hint: 消融覆盖}, {path: "{ms}/37-references.md", priority: must_read, hint: 文献表}, {path: "{data}/11-analysis.md", priority: must_read, hint: 数据事实}, {path: "{admin}/03-journal-selection.md", priority: must_read, hint: 目标刊要求}]
+    edit: ["{review}/50-review-report.md"]
+    hours: 3
+    difficulty: high
+    verify: "python {verify_tool} task-presubmit-review"
+
+  - id: task-finalize-manuscript
+    module: mod-final
+    stage: P6
+    name: 按评审定稿
+    brief: 按评审意见定稿，产出零占位符终稿与响应说明。
+    ac:
+      - "`{ms}/38-final.md` 落实评审报告中全部 CRITICAL/MAJOR 项，并在 `{review}/51-response-to-review.md` 逐条给处置与依据。"
+      - "终稿零占位符：无标记、无 TODO/TBD、无面向作者的说明块；未确认的复现要素按 `{admin}/09-reproducibility.md` 的待确认口径统一上收为作者待办清单，不在正文留悬空句。"
+      - "定稿只改陈述与措辞，不改任何结果数值；数值变更须回到 `{data}/11-analysis.md` 与 `{data}/10-audit.md` 并说明。"
+    read: [{path: "{review}/50-review-report.md", priority: must_read, hint: 评审问题清单}, {path: "{admin}/09-reproducibility.md", priority: must_read, hint: 待确认口径上收依据}, {path: "{ms}/36-draft.md", priority: must_read, hint: 待改稿}, {path: "{ms}/37-references.md", priority: must_read, hint: 文献表}, {path: "{lit}/22-refs.json", priority: reference, hint: 终局 strict 验真库（B06b 门判定对象）}]
+    edit: ["{ms}/38-final.md", "{review}/51-response-to-review.md"]
+    hours: 3.5
+    difficulty: medium
+    verify: "python {verify_tool} task-finalize-manuscript"
+
+  - id: task-latex-build
+    module: mod-final
+    stage: P6
+    name: LaTeX 排版构建
+    brief: 按目标刊模板生成 tex 并构建 PDF，回读校验。
+    ac:
+      - "`{latex}/manuscript/manuscript.tex` 由终稿生成，文件头标注 GENERATED 且不得手工改写内容。"
+      - "`{latex}/manuscript/refs.bib` 与 `{ms}/37-references.md` 的编号一一对应，无悬空引用。"
+      - "构建产物 PDF 的页数、图数、表数与终稿一致，引用编号连续无缺号；构建脚本 `{latex}/build_paper.ps1` 可复跑。"
+      - "可复现性清单与消融表、补充材料按目标刊要求随件构建，主件 PDF 的图表编号与正文引用一致。"
+    read: [{path: "{ms}/38-final.md", priority: must_read, hint: 终稿真源}, {path: "{ms}/37-references.md", priority: must_read, hint: 文献表}, {path: "{data}/14-table-ablations.md", priority: reference, hint: 补充材料与消融口径}, {path: "{admin}/09-reproducibility.md", priority: must_read, hint: "可复现性清单真源（本任务 AC 末条要求随件构建的输入）"}, {path: "{fig}/", priority: must_read, hint: 图件}]
+    edit: ["{latex}/manuscript/manuscript.tex", "{latex}/manuscript/refs.bib", "{latex}/build_paper.ps1"]
+    hours: 4
+    difficulty: medium
+    verify: "python {verify_tool} task-latex-build"
+
+  # 基类任务：本条 inject 已生效（task-deep-merge-child-inject 修复 deep_merge 的子档-only
+  # inject 丢弃：子档有 `inject` 即与父档 `inject`（缺省空列表）去重追加）。基类 `task-back-matter`
+  # （00-base-empirical.yaml:80）无 `inject` 键，合并后本档该任务含 `inject`，生成卡
+  # `proposals/task-back-matter.json` 的 AC 含「复现声明六要素」「可复现性清单按 axes」两条域口径行
+  # （对照：同批 task-write-implementation.json 8 条 AC、「域口径约束」出现 3 次）。
+  - id: task-back-matter
+    inject: [reproducibility_statement, reporting_standard]   # 已生效：deep_merge 子档-only inject 去重追加
