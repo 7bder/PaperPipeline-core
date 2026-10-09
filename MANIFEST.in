@@ -1,9 +1,10 @@
 # 发布面单一真源（纯白名单）：清单内 = 发布，清单外 = 开发层。
 # 维护纪律：发布目录新增文件必须同步加一行 include（scripts/76 号 G7 守卫机检覆盖完整性）；
 # scripts/76-doc-refs-selftest.py 为本仓文档卫生自检，属开发层，刻意不列（装出去必红）。
-# scripts/79-release-publish.py 为发版器（开发面→最小纯净版→push 独立发布仓），属开发层，
-# 刻意不列（发行版自身不该带发版器，否则自指循环）；76 号 DEV_TIER 已声明。
-# 仓根维护件 AGENTS.md / ROADMAP.md / .gitignore 亦属开发层（不发货）：与 README「开发层」清单
+# scripts/79-release-publish.py 为发版器（开发仓→组装→双仓推送，推 tag 由 .githooks/pre-push
+# 自动触发），属开发层，刻意不列（发行版自身不该带发版器，否则自指循环）；76 号 DEV_TIER 已声明。
+# .githooks/pre-push 为 tag 触发的发版同步 hook（开发层，不发货）；.gitattributes 是其行尾契约。
+# 仓根维护件 AGENTS.md / ROADMAP.md / .gitignore / .gitattributes 亦属开发层（不发货）：与 README「开发层」清单
 # 及 scripts/76-doc-refs-selftest.py 的 DEV_TIER 一本账（E6）；未归类跟踪件由 G7 仓根对账判红。
 include SKILL.md
 include README.md

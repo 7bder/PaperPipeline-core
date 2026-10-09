@@ -162,7 +162,7 @@
 ### 显式禁止清单（原文三项不可减，另可增）
 
 - **不要求手动 git 写操作**：本手册所有命令不得出现 `git checkout / reset / stash / clean / branch / merge / push` 作为处置手段；git 写只由引擎执行，唯一豁免 = 任务分支上的 `git commit` 与受管出口 `orchd git merge main`。（承接 红线 1、2）
-  - **发版豁免（用户点名的受权通道）**：`scripts/79-release-publish.py` 是开发面发版器，其 `git push` 属用户显式要求的发布动作（用户以 `--remote` 显式给出才执行，缺省 dry-run 不联网）——与"处置手段"无关，不属本红线管辖；代理不得在任务执行期借发版器 push，发版只由用户在命令行发起。
+  - **发版豁免（用户点名的受权通道）**：`scripts/79-release-publish.py` 是开发仓发版器，其 `git push` 属用户显式要求的发布动作（发版 = 推 tag，`.githooks/pre-push` 自动组装并推双仓；手动跑亦须显式给 TAG）——与"处置手段"无关，不属本红线管辖；代理不得在任务执行期借发版器 push，发版只由用户在命令行发起。
 - **不替用户 intake/claim**：摄入只由用户指定，`request --auto-claim` 默认拒绝；代理不得自行 `intake` 或在无候选时 `claim`。（承接 红线 6、7、14）
 - **不替用户 confirm/drop 选题**：`confirm`/`drop` 仅用户可执行，代理只能 `idea propose` 记入 study；灵感类直接写 IDEAS.md 而非自行入池。（承接 红线 6、10）
 - **不手改引擎运行时文件与声明真源**：`_ledger.jsonl` / `_checkpoint.json` / `mod-*/spec.json` / `_master.json` 只读，改声明走 `amend`。（承接 红线 3、9）

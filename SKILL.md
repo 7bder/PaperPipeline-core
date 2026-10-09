@@ -153,7 +153,7 @@ python -X utf8 scripts/30-gen-proposals.py --profile profiles/<x>.yaml --regress
 | `references/60-capability-specs.md` | 已建能力规格（行为契约）：40 词表 schema 与三条判定 / 50 runbook 大纲与素材面 / static 碎片 manifest schema 与命中算法 | **修改或依赖该能力前必读** |
 | `assets/00-proposal.template.json` | proposal 字段示范 | 新项目建 proposal 时 |
 | `assets/10-verify-manifest.template.json` | 各断言类型示例 | 新项目建 verify manifest 时 |
-| `CHANGELOG.md` | 设计决策 D-1…D-22 全文（本仓库实际决策记录位置；审查发现的 N-编号遗留清单在 D-13 §遗留） | 有疑问、判断引擎行为或回归时先查这里 |
+| `CHANGELOG.md` | 设计决策 D-1…D-23 全文（本仓库实际决策记录位置；审查发现的 N-编号遗留清单在 D-13 §遗留） | 有疑问、判断引擎行为或回归时先查这里 |
 
 ## 硬约束速查（来自设计决策，勿重走老路）
 

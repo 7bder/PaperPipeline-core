@@ -100,7 +100,7 @@ paper-pipeline/
 ├── ROADMAP.md                研发路线图（开发层，不入发布面）
 ├── AGENTS.md                 orchd AI 协作入口指针（开发层，不入发布面）
 ├── MANIFEST.in               发布面清单（单一真源；由发版流程维护）
-├── CHANGELOG.md              设计决策记录 D-1…D-22（开发层备查，不入发布面）
+├── CHANGELOG.md              设计决策记录 D-1…D-23（开发层备查，不入发布面）
 ├── profiles/                 领域档（四轴：论文类型×证据形态×出版社×语言/报告规范）
 │   ├── 00-base-empirical.yaml        通用基类：证据口径 + back-matter + P-1 资产规划
 │   ├── 10-materials-chemistry.yaml   材料/化工/涂层（源自真实项目 paper1，回归基线档，24 任务）
@@ -230,30 +230,37 @@ python PaperPipeline-core/install.py <论文项目>/ --mode project --profile pr
 **开发层（不入发布面）**：`.orchd/`（开发编排引擎工作区）、`build/`（生成物沙盒）、
 `reports/`（审计档案）、`scripts/76-doc-refs-selftest.py`
 （本仓文档卫生自检——机检的是本仓自己的台账与引用，装出去无意义）、
-`scripts/79-release-publish.py`（发版器——开发面→最小纯净版→push 独立发布仓，发行版不带发版器）、
+`scripts/79-release-publish.py`（发版器——开发仓→组装→双仓推送，推 tag 由 `.githooks/pre-push`
+自动触发，发行版不带发版器）、`.githooks/`（发版同步 hook，开发仓本地生效）、
 仓根维护件
-`.gitignore`（本仓忽略规则）、`ROADMAP.md`（研发路线图）、`AGENTS.md`（orchd 协作入口指针）、
+`.gitignore`（本仓忽略规则）、`.gitattributes`（hook 行尾契约，保 pre-push 为 LF）、
+`ROADMAP.md`（研发路线图）、`AGENTS.md`（orchd 协作入口指针）、
 `CHANGELOG.md`（设计决策史，开发层备查）。
 
-### 自动发版（开发面 → 最小纯净版 → 独立发布仓）
+### 自动发版（开发仓 → 组装 → 双仓推送）
 
-与 [orchd-core](https://github.com/7bder/orchd-core) 同构的发版通道：开发仓是开发面，发版时按
-`MANIFEST.in` 纯白名单组装**最小纯净版**（只含发布面，开发层物理上不进组装流），提交后 push
-到独立发布仓；使用者 clone 发布仓即得发行版。
+与 [orchd-core](https://github.com/7bder/orchd-core) 同构的发版通道：发布版本 = 推 tag。
+开发仓是开发面，发版时按 `MANIFEST.in` 纯白名单组装**最小纯净版**（只含发布面，
+开发层物理上不进组装流），提交到常驻发布仓克隆，随后**双仓推送**（开发仓 main +
+发布仓 main + 同名 tag）；使用者 clone 发布仓即得发行版。
 
 ```bash
-# dry-run：只组装 + 提交到临时 git 仓，不联网（先看产物与消息）
-python scripts/79-release-publish.py
-# 正式发版：组装 + 提交 + push 到发布仓（git 凭据走本机）
-python scripts/79-release-publish.py --remote https://github.com/7bder/PaperPipeline-core.git
-# 附带打 tag 并推送 tag（tag 属 git 写操作，须显式给出）
-python scripts/79-release-publish.py --remote <发布仓URL> --tag v0.4.0
+# 一次性启用发版 hook（本地配置，不随 clone 传播；在仓库根执行）
+git config core.hooksPath .githooks
+# 正常发版：打 tag 并推送，hook 自动组装并推双仓（同步失败则本次 push 被拒）
+git tag v0.4.0 && git push origin v0.4.0
+# 预览组装（不写发布仓、不联网）：先看产物与文件数
+python scripts/79-release-publish.py v0.4.0 --dry-run
+# 手动发版（与 hook 同语义，hook 未启用时用；TAG 缺省为最新 tag）
+python scripts/79-release-publish.py v0.4.0
 ```
 
-前置：源仓 git 工作树干净、`VERSION` 首行为 `vX.Y.Z`、`MANIFEST.in` 在盘——任一不满足即 rc=2。
-**push 仅在显式给出 `--remote` 时执行**（红线：git push 不自动发生），失败 rc=1 不伪装成功。
-开发层（`.orchd/` 等）由白名单机制物理隔离，`79` 号自测含"开发层缺席"反向断言。
-后四者与 76 号 `DEV_TIER` 中声明的开发层清单**一本账**（均未列 MANIFEST；仓根未归类跟踪件由 G7 对账判红）。
+前置：开发仓与发布仓工作树干净、发布仓在 main 分支、`TAG` 与 `VERSION` 首行一致、
+`MANIFEST.in` 在盘——任一不满足即 rc=2，不碰发布仓。发布仓须为**常驻本地克隆**
+（缺省为开发仓同级 `../PaperPipeline-core`，`--dist-dir` / `PP_DIST_DIR` 可覆盖；
+远端名缺省 origin，`--dist-remote` / `--main-remote` 可覆盖）；推送任一步失败 rc=1
+不伪装成功。开发层（`.orchd/` 等）由白名单机制物理隔离，`79` 号自测含"开发层缺席"反向断言。
+后五者与 76 号 `DEV_TIER` 中声明的开发层清单**一本账**（均未列 MANIFEST；仓根未归类跟踪件由 G7 对账判红）。
 本目录**永不承载论文项目执行件**：试点与生成一律在独立项目目录进行，`build/` 只放生成物沙盒。
 
 ## 开发与回归
